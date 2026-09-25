@@ -91,6 +91,8 @@ def main() -> None:
         before = evals[i] * mover_sign
         after = evals[i + 1] * mover_sign
         loss = max(0, min(before, MATE_CP) - min(after, MATE_CP))
+        if bests[i] == board.san(chess.Move.from_uci(m["uci"])):
+            loss = 0  # we played the engine's best move; any eval drop is depth resolution, not an error
         stats[m["by"]].append(min(loss, 1000))
         kind = classify(loss)
         if kind:

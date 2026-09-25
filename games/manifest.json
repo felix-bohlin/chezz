@@ -23,7 +23,8 @@
       "winner": "us",
       "termination": "checkmate",
       "plies": 69,
-      "engineVersion": "0.1.0"
+      "engineVersion": "0.1.0",
+      "ourMaxMoveMs": 4956
     },
     {
       "id": "0002",
@@ -36,7 +37,8 @@
       "winner": "us",
       "termination": "checkmate",
       "plies": 60,
-      "engineVersion": "0.1.0"
+      "engineVersion": "0.1.0",
+      "ourMaxMoveMs": 4941
     },
     {
       "id": "0003",
@@ -49,7 +51,8 @@
       "winner": "us",
       "termination": "checkmate",
       "plies": 57,
-      "engineVersion": "0.1.3"
+      "engineVersion": "0.1.3",
+      "ourMaxMoveMs": 5001
     },
     {
       "id": "0004",
@@ -62,12 +65,13 @@
       "winner": "us",
       "termination": "checkmate",
       "plies": 60,
-      "engineVersion": "0.1.4"
+      "engineVersion": "0.1.4",
+      "ourMaxMoveMs": 4896
     },
     {
       "id": "0005",
       "file": "0005_elo-2700_loss.json",
-      "analysis": null,
+      "analysis": "0005_elo-2700_loss.analysis.md",
       "date": "2026-09-25T10:15:32Z",
       "stockfishElo": 2700,
       "ourColor": "white",
@@ -75,7 +79,22 @@
       "winner": "stockfish",
       "termination": "checkmate",
       "plies": 182,
-      "engineVersion": "0.1.4"
+      "engineVersion": "0.1.4",
+      "ourMaxMoveMs": 4909
+    },
+    {
+      "id": "0006",
+      "file": "0006_elo-2700_loss.json",
+      "analysis": null,
+      "date": "2026-09-25T10:32:57Z",
+      "stockfishElo": 2700,
+      "ourColor": "black",
+      "result": "1-0",
+      "winner": "stockfish",
+      "termination": "checkmate",
+      "plies": 169,
+      "engineVersion": "0.1.5",
+      "ourMaxMoveMs": 4907
     }
   ]
 }

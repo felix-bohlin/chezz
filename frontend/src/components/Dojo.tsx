@@ -16,6 +16,14 @@ const RESULT = {
 
 type Status = 'conquered' | 'contested' | 'next' | 'locked'
 
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 export function Dojo({ manifest, live, onOpen }: Props) {
   const games = manifest.games
   const wins = games.filter((g) => g.winner === 'us').length
@@ -117,15 +125,23 @@ export function Dojo({ manifest, live, onOpen }: Props) {
               <button key={g.id} className={`battle-card outcome-${g.winner}`} onClick={() => onOpen(g.id)}>
                 <span className="battle-kanji">{RESULT[g.winner].kanji}</span>
                 <span className="battle-card-body">
-                  <span className="battle-card-title">
-                    #{g.id} · Elo {g.stockfishElo}
+                  <span className="battle-card-head">
+                    <span className="battle-card-title">Elo {g.stockfishElo}</span>
+                    <span className="battle-card-result">
+                      {RESULT[g.winner].label} {g.result}
+                    </span>
                   </span>
-                  <span className="battle-card-meta">
-                    {RESULT[g.winner].label} as {g.ourColor} · {g.result} · {g.termination}
+                  <span className="battle-card-sub">
+                    Battle #{g.id} · {formatDate(g.date)}
                   </span>
-                  <span className="battle-card-meta">
-                    {g.plies} plies · chezz {g.engineVersion} · {g.date.slice(0, 16).replace('T', ' ')}
-                    {g.analysis ? ' · 巻物' : ''}
+                  <span className="battle-card-chips">
+                    <span className="chip">
+                      <i className={`chip-swatch chip-${g.ourColor}`} /> {cap(g.ourColor)}
+                    </span>
+                    <span className="chip">{cap(g.termination.replace(/_/g, ' '))}</span>
+                    <span className="chip">{Math.ceil(g.plies / 2)} moves</span>
+                    <span className="chip">v{g.engineVersion}</span>
+                    {g.analysis && <span className="chip chip-scroll">巻物 analysis</span>}
                   </span>
                 </span>
               </button>

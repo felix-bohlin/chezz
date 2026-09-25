@@ -725,15 +725,15 @@ button {
 }
 .battle-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
 }
 .battle-card {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  gap: 14px;
+  align-items: flex-start;
   text-align: left;
-  padding: 10px 12px;
+  padding: 14px;
   background: #fbf3de;
   border: 3px solid var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
@@ -747,30 +747,75 @@ button {
   flex: none;
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  font-size: 30px;
+  width: 56px;
+  height: 56px;
+  font-size: 34px;
   border: 3px solid var(--ink);
   background: var(--washi-dark);
 }
 .battle-card.outcome-us .battle-kanji { background: var(--vermilion); color: var(--washi); }
 .battle-card.outcome-stockfish .battle-kanji { background: var(--ink-soft); color: var(--washi); }
 .battle-card-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   color: var(--ink);
+}
+.battle-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 .battle-card-title {
   font-family: var(--font-num);
-  font-size: 24px;
+  font-size: 30px;
   line-height: 1;
 }
-.battle-card-meta {
-  font-size: 12px;
-  opacity: 0.75;
+.battle-card-result {
+  font-family: var(--font-num);
+  font-size: 18px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 2px solid var(--ink);
+  white-space: nowrap;
 }
-.empty {
+.outcome-us .battle-card-result { background: #cfe3b8; color: #1f4d1b; }
+.outcome-stockfish .battle-card-result { background: #f2c4bb; color: var(--vermilion-dark); }
+.outcome-draw .battle-card-result { background: var(--washi-dark); }
+.battle-card-sub {
+  font-size: 13px;
+  opacity: 0.7;
+}
+.battle-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  font-size: 12px;
+  background: var(--washi);
+  border: 2px solid var(--washi-dark);
+}
+.chip-swatch {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink);
+}
+.chip-white { background: var(--ivory); }
+.chip-black { background: var(--crimson); }
+.chip-scroll {
+  border-color: var(--gold);
+  color: var(--vermilion-dark);
+}.empty {
   opacity: 0.7;
 }
 

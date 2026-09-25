@@ -56,6 +56,8 @@ python backend/runner.py --elo auto --quiet         # one ladder game at the nex
 python backend/runner.py --elo 1600 --games 3       # fixed Elo
 python backend/analyze.py games/0001_elo-1320_win.json
 python backend/selfplay.py --baseline backend/engine/baseline/chezz.exe
+python backend/verify_games.py                      # every saved move legal, FEN/PGN/result consistent
+python backend/timecheck.py                         # proves ≤ 5 s/move on real positions
 cd frontend && pnpm dev                             # replay app on http://localhost:5173
 ```
 
@@ -70,6 +72,9 @@ then unzip into `backend/tools/stockfish/`. Minimum `UCI_Elo` is 1320.
   records `ourMaxMoveMs` and any `timeViolations` per game; `python backend/timecheck.py` proves it on
   positions from real games. Run timecheck after any change to search, threading or time management.
 - Stockfish strength set only via `UCI_LimitStrength: True` + `UCI_Elo`.
+- Every move is legal: the engine only plays moves from shakmaty's legal move generator; python-chess
+  rejects any illegal `bestmove` (`push_uci` raises, and the runner records an engine-error loss); and
+  `backend/verify_games.py` independently replays every saved game.
 - A draw is not a win; the ladder only advances on `winner: "us"` (our engine uses contempt to avoid draws).
 - Every game saved with its Elo (runner does this) and replayable on a graphical board (frontend).
 - After **every** game: run the `analyze-game` skill, which runs **both** analysis sub-agents.

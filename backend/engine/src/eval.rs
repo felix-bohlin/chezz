@@ -18,6 +18,11 @@ const ROOK_OPEN: (i32, i32) = (20, 10);
 const ROOK_SEMI: (i32, i32) = (10, 5);
 const KING_ATTACK_WEIGHT: [i32; 6] = [0, 3, 3, 4, 7, 0];
 const KING_ATTACK_CAP: i32 = 700;
+// Shelter of a castled (wing) king, middlegame only.
+const SHIELD_PAWN: i32 = 12;
+const SHIELD_MISSING: i32 = 20;
+const KING_OPEN_FILE: i32 = 25;
+const KING_SEMI_FILE: i32 = 12;
 
 #[inline]
 pub fn ri(r: Role) -> usize {
@@ -333,9 +338,14 @@ pub fn evaluate(pos: &Chess) -> i32 {
                     }
                     Role::King => {
                         let rel_rank = if us == 0 { s / 8 } else { 7 - s / 8 };
-                        if rel_rank == 0 && f != 3 && f != 4 {
-                            let shield = (m.shield[us][s] & pawns[us]).count_ones() as i32;
-                            mg[us] += 12 * shield.min(3);
+                        if rel_rank <= 1 && f != 3 && f != 4 {
+                            let shield = ((m.shield[us][s] & pawns[us]).count_ones() as i32).min(3);
+                            mg[us] += SHIELD_PAWN * shield - SHIELD_MISSING * (3 - shield);
+                            for ff in f.saturating_sub(1)..=(f + 1).min(7) {
+                                if m.file[ff] & pawns[us] == 0 {
+                                    mg[us] -= if m.file[ff] & pawns[them] == 0 { KING_OPEN_FILE } else { KING_SEMI_FILE };
+                                }
+                            }
                         }
                         continue;
                     }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import subprocess
 
@@ -38,8 +39,12 @@ def load_games() -> list[dict]:
 
 
 def next_game_id() -> str:
+    """Each machine owns a 1000-id window via CHEZZ_ID_BASE (0 = machine A, 1000 = machine B, ...),
+    so two machines playing in parallel can never collide on filenames."""
+    base = int(os.environ.get("CHEZZ_ID_BASE", "0"))
     ids = [int(p.name[:4]) for p in GAMES.glob("[0-9][0-9][0-9][0-9]_*.json")]
-    return f"{max(ids, default=0) + 1:04d}"
+    mine = [i for i in ids if base < i <= base + 999]
+    return f"{max(mine, default=base) + 1:04d}"
 
 
 def highest_win(games: list[dict]) -> int | None:

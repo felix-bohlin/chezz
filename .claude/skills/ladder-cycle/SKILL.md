@@ -30,7 +30,10 @@ See CLAUDE.md for commands and PATH setup.
 
 ## 2. Analyze
 
-Invoke the `analyze-game` skill with `games/<STEM>.json`. It runs full-strength Stockfish post-mortem
+First run `python backend/verify_games.py` (a few seconds): every move legal, SAN/FEN/PGN consistent,
+result matches the final position, no move of ours over 5 s. A FAIL is a bug to fix before anything else.
+
+Then invoke the `analyze-game` skill with `games/<STEM>.json`. It runs full-strength Stockfish post-mortem
 + both sub-agents in parallel and writes `games/<STEM>.analysis.md` with a **Decision** section.
 
 ## 3. Improve (one change per cycle)

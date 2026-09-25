@@ -40,6 +40,7 @@ def main() -> None:
     args = ap.parse_args()
 
     engine = chess.engine.SimpleEngine.popen_uci(str(ENGINE))
+    name = engine.id.get("name", "engine")
     times = []
     try:
         for i, fen in enumerate(sample_positions(args.positions)):
@@ -55,7 +56,7 @@ def main() -> None:
 
     worst = max(times)
     over = sum(t > args.limit * 1000 for t in times)
-    print(f"TIMECHECK {engine.id.get('name', 'engine')}: {len(times)} moves, avg {sum(times) / len(times):.0f} ms, "
+    print(f"TIMECHECK {name}: {len(times)} moves, avg {sum(times) / len(times):.0f} ms, "
           f"max {worst:.0f} ms, over limit: {over}")
     sys.exit(1 if over else 0)
 
