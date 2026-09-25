@@ -1,6 +1,6 @@
 {
-  "highestWin": 1400,
-  "nextElo": 1500,
+  "highestWin": 1500,
+  "nextElo": 1600,
   "ladder": [
     1320,
     1400,
@@ -49,6 +49,19 @@
       "termination": "checkmate",
       "plies": 60,
       "engineVersion": "0.1.0"
+    },
+    {
+      "id": "0003",
+      "file": "0003_elo-1500_win.json",
+      "analysis": null,
+      "date": "2026-09-25T10:02:52Z",
+      "stockfishElo": 1500,
+      "ourColor": "white",
+      "result": "1-0",
+      "winner": "us",
+      "termination": "checkmate",
+      "plies": 57,
+      "engineVersion": "0.1.3"
     }
   ]
 }
