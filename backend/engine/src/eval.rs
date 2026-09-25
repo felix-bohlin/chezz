@@ -16,6 +16,8 @@ const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
 const ROOK_OPEN: (i32, i32) = (20, 10);
 const ROOK_SEMI: (i32, i32) = (10, 5);
+const ROOK_SEVENTH: (i32, i32) = (35, 15);
+const ROOK_CENTRAL: (i32, i32) = (10, 5);
 const KING_ATTACK_WEIGHT: [i32; 6] = [0, 3, 3, 4, 7, 0];
 const KING_ATTACK_CAP: i32 = 700;
 // Shelter of a castled (wing) king, middlegame only.
@@ -315,6 +317,15 @@ pub fn evaluate(pos: &Chess) -> i32 {
                     }
                     Role::Rook => {
                         npm[us] += 5;
+                        let rel_rank = if us == 0 { s / 8 } else { 7 - s / 8 };
+                        if rel_rank == 6 {
+                            mg[us] += ROOK_SEVENTH.0;
+                            eg[us] += ROOK_SEVENTH.1;
+                        }
+                        if f == 3 || f == 4 {
+                            mg[us] += ROOK_CENTRAL.0;
+                            eg[us] += ROOK_CENTRAL.1;
+                        }
                         if m.file[f] & (pawns[0] | pawns[1]) == 0 {
                             mg[us] += ROOK_OPEN.0;
                             eg[us] += ROOK_OPEN.1;
