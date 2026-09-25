@@ -1,0 +1,54 @@
+{
+  "highestWin": 1400,
+  "nextElo": 1500,
+  "ladder": [
+    1320,
+    1400,
+    1500,
+    1600,
+    1700,
+    1800,
+    1900,
+    2000,
+    2100,
+    2200,
+    2300,
+    2400,
+    2500,
+    2600,
+    2700,
+    2800,
+    2900,
+    3000,
+    3100,
+    3190
+  ],
+  "games": [
+    {
+      "id": "0001",
+      "file": "0001_elo-1320_win.json",
+      "analysis": "0001_elo-1320_win.analysis.md",
+      "date": "2026-09-25T09:39:30Z",
+      "stockfishElo": 1320,
+      "ourColor": "white",
+      "result": "1-0",
+      "winner": "us",
+      "termination": "checkmate",
+      "plies": 69,
+      "engineVersion": "0.1.0"
+    },
+    {
+      "id": "0002",
+      "file": "0002_elo-1400_win.json",
+      "analysis": "0002_elo-1400_win.analysis.md",
+      "date": "2026-09-25T09:48:41Z",
+      "stockfishElo": 1400,
+      "ourColor": "black",
+      "result": "0-1",
+      "winner": "us",
+      "termination": "checkmate",
+      "plies": 60,
+      "engineVersion": "0.1.0"
+    }
+  ]
+}

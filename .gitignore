@@ -1,0 +1,25 @@
+# Rust
+backend/engine/target/
+backend/engine/baseline/
+
+# Stockfish binary (download per CLAUDE.md)
+backend/tools/stockfish/
+
+backend/logs/
+games/live.json
+games/live.tmp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/public/games
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
