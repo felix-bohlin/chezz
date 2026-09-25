@@ -52,5 +52,5 @@ export function Live() {
     moves: live.moves,
     pgn: '',
   }
-  return <ReplayView key={live.id} game={game} initialPly={live.moves.length} live />
+  return <ReplayView key={live.id} game={game} initialPly={live.moves.length} live liveSince={live.updatedAt ?? null} />
 }

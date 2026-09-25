@@ -243,6 +243,17 @@ fn center_distance(sq: Square) -> i32 {
     (3 - f).max(f - 4) + (3 - r).max(r - 4)
 }
 
+/// Piece-square gain of moving a piece from `from` to `to` (mg + eg averaged), for quiet-move ordering.
+#[inline]
+pub fn pst_delta(role: Role, color: Color, from: Square, to: Square) -> i32 {
+    let r = ri(role);
+    let (f, t) = match color {
+        Color::White => (from.to_usize() ^ 56, to.to_usize() ^ 56),
+        Color::Black => (from.to_usize(), to.to_usize()),
+    };
+    (MG_PST[r][t] - MG_PST[r][f] + EG_PST[r][t] - EG_PST[r][f]) / 2
+}
+
 /// Static evaluation from the side to move's point of view, in centipawns.
 pub fn evaluate(pos: &Chess) -> i32 {
     let b = pos.board();

@@ -1,11 +1,12 @@
 import { marked } from 'marked'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadAnalysis, loadGame } from '../lib/data'
-import { START_FEN } from '../lib/fen'
+import { START_FEN, sideToMove } from '../lib/fen'
 import { spriteUrl } from '../pixel/render'
 import type { GameRecord, ManifestEntry } from '../types/game'
 import { Board } from './Board'
 import { EvalChart } from './EvalChart'
+import { MoveTimer, OVER_TOLERANCE_MS } from './MoveTimer'
 
 const SPEEDS = [
   { label: '½×', ms: 2000 },
@@ -52,9 +53,11 @@ interface ViewProps {
   initialPly?: number
   /** Live mode: follows new moves as they arrive and doesn't touch the URL. */
   live?: boolean
+  /** Live mode: epoch seconds of the last move, i.e. when the side to move started thinking. */
+  liveSince?: number | null
 }
 
-export function ReplayView({ game, analysis = null, initialPly = 0, live = false }: ViewProps) {
+export function ReplayView({ game, analysis = null, initialPly = 0, live = false, liveSince = null }: ViewProps) {
   const [ply, setPly] = useState(initialPly)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
@@ -126,16 +129,25 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
     else pairs[pairs.length - 1].black = { m, i }
   })
 
-  const general = (army: 'w' | 'b', name: string, sub: string, side: 'top' | 'bottom', isUs: boolean) => (
-    <div className={`general general-${side}${isUs ? ' general-us' : ''}`}>
-      <img className="portrait" src={spriteUrl('k', army)} alt="" />
-      <div>
-        <div className="general-name">{name}</div>
-        <div className="general-sub">{sub}</div>
+  const toMove = sideToMove(fen)
+  const limitMs = (game.moveTimeSec || 5) * 1000
+  const atLiveEdge = live && ply === total
+
+  const general = (army: 'w' | 'b', name: string, sub: string, side: 'top' | 'bottom', isUs: boolean) => {
+    const last = [...game.moves.slice(0, ply)].reverse().find((m) => (m.by === 'us') === isUs)
+    const thinking = atLiveEdge && toMove === army
+    return (
+      <div className={`general general-${side}${isUs ? ' general-us' : ''}${thinking ? ' general-thinking' : ''}`}>
+        <img className="portrait" src={spriteUrl('k', army)} alt="" />
+        <div className="general-text">
+          <div className="general-name">{name}</div>
+          <div className="general-sub">{sub}</div>
+        </div>
+        <MoveTimer ms={last?.timeMs ?? null} since={thinking ? (liveSince ?? null) : null} limitMs={limitMs} />
+        <div className="general-clan">{army === 'w' ? '白' : '赤'}</div>
       </div>
-      <div className="general-clan">{army === 'w' ? '白' : '赤'}</div>
-    </div>
-  )
+    )
+  }
 
   const ours = general(ourArmy, `Chezz ${game.engine.version}`, 'Our engine · Rust · 5s/move', 'bottom', true)
   const theirs = general(sfArmy, 'Stockfish', `${game.stockfishVersion} · UCI_Elo ${game.stockfishElo}`, 'top', false)
@@ -238,6 +250,9 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
                       onClick={() => seek(x.i + 1)}
                     >
                       {x.m.san}
+                      <span className={`mv-time${x.m.timeMs > limitMs + OVER_TOLERANCE_MS ? ' mv-time-over' : ''}`}>
+                        {(x.m.timeMs / 1000).toFixed(1)}s
+                      </span>
                     </button>
                   ) : (
                     <span key={k} />
