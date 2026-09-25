@@ -55,6 +55,10 @@ def next_ladder_elo(games: list[dict]) -> int:
     return higher[0] if higher else LADDER[-1]
 
 
+def our_max_ms(game: dict) -> int:
+    return max((m["timeMs"] for m in game["moves"] if m["by"] == "us"), default=0)
+
+
 def write_indexes() -> None:
     """Regenerate manifest.json and PROGRESS.md from the per-game files (single writer, never hand-edit)."""
     games = load_games()
@@ -73,6 +77,7 @@ def write_indexes() -> None:
             "termination": g["termination"],
             "plies": len(g["moves"]),
             "engineVersion": g["engine"]["version"],
+            "ourMaxMoveMs": our_max_ms(g),
         })
     manifest = {
         "highestWin": highest_win(games),
@@ -94,16 +99,18 @@ def write_indexes() -> None:
         f"(W {sum(g['winner'] == 'us' for g in games)} / "
         f"D {sum(g['winner'] == 'draw' for g in games)} / "
         f"L {sum(g['winner'] == 'stockfish' for g in games)})",
+        f"- **Slowest move by our engine, all games:** {max((e['ourMaxMoveMs'] for e in entries), default=0)} ms "
+        f"(limit 5000 ms; engine caps itself at 4750 ms)",
         "",
-        "| # | Date (UTC) | Stockfish Elo | Our color | Result | Outcome | Termination | Plies | Engine | Game | Analysis |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "| # | Date (UTC) | Stockfish Elo | Our color | Result | Outcome | Termination | Plies | Our max think | Engine | Game | Analysis |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for e, g in zip(entries, games):
         outcome = {"us": "**WIN**", "draw": "draw", "stockfish": "loss"}[e["winner"]]
         analysis = f"[md](games/{e['analysis']})" if e["analysis"] else "—"
         lines.append(
             f"| {e['id']} | {e['date'][:16].replace('T', ' ')} | {e['stockfishElo']} | {e['ourColor']} | "
-            f"{e['result']} | {outcome} | {e['termination']} | {e['plies']} | "
+            f"{e['result']} | {outcome} | {e['termination']} | {e['plies']} | {e['ourMaxMoveMs']} ms | "
             f"{g['engine']['version']} ({g['engine'].get('commit', '?')}) | [json](games/{e['file']}) | {analysis} |"
         )
     PROGRESS.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -51,6 +51,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
 
     board = chess.Board()
     moves = []
+    violations: list[int] = []
     termination = None
     started = dt.datetime.now(dt.timezone.utc)
     live = {
@@ -78,6 +79,10 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
                 print(f"engine failure ({'us' if is_us else 'stockfish'}): {exc}", file=sys.stderr)
                 break
             ms = int((time.perf_counter() - t0) * 1000)
+            if is_us and ms > MOVE_TIME * 1000:
+                violations.append(len(moves) + 1)
+                print(f"!!! TIME VIOLATION: our move at ply {len(moves) + 1} took {ms} ms (limit {MOVE_TIME:g} s)",
+                      file=sys.stderr, flush=True)
             if res.move is None:
                 termination = "engine-error" if is_us else "stockfish-error"
                 break
@@ -162,6 +167,8 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         "termination": termination,
         "engine": {"name": "chezz", "version": version, "commit": git_commit()},
         "startFen": chess.STARTING_FEN,
+        "ourMaxMoveMs": max((m["timeMs"] for m in moves if m["by"] == "us"), default=0),
+        "timeViolations": violations,
         "moves": moves,
         "pgn": str(pgn_game),
     }
@@ -201,7 +208,8 @@ def main() -> None:
         path = play_game(elo, our_color, verbose=not args.quiet)
         rec = json.loads(path.read_text(encoding="utf-8"))
         print(f"RESULT {rec['result']} winner={rec['winner']} termination={rec['termination']} "
-              f"plies={len(rec['moves'])} file=games/{path.name}", flush=True)
+              f"plies={len(rec['moves'])} ourMaxMs={rec['ourMaxMoveMs']} "
+              f"violations={len(rec['timeViolations'])} file=games/{path.name}", flush=True)
 
 
 if __name__ == "__main__":

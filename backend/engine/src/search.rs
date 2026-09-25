@@ -14,6 +14,8 @@ pub const MATE_BOUND: i32 = MATE - 1000;
 pub const MAX_PLY: usize = 128;
 
 const SKIP: i32 = i32::MIN;
+/// Losing captures (by SEE) are skipped at shallow depth when they lose more than this per ply.
+const SEE_PRUNE_MARGIN: i32 = 100;
 
 pub fn hash_of(pos: &Chess) -> u64 {
     pos.zobrist_hash::<Zobrist64>(EnPassantMode::Legal).0
@@ -544,6 +546,12 @@ impl Searcher {
                 if depth <= 4 && searched >= 4 + (depth * depth) as usize * 2 {
                     continue;
                 }
+            }
+
+            if !pv_node && !in_check && m.is_capture() && !m.is_promotion() && searched > 0
+                && best > -MATE_BOUND && depth <= 6 && see(pos.board(), &m) < -SEE_PRUNE_MARGIN * depth
+            {
+                continue;
             }
 
             let mut child = pos.clone();

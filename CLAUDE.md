@@ -65,7 +65,10 @@ then unzip into `backend/tools/stockfish/`. Minimum `UCI_Elo` is 1320.
 
 ## Competition rules we must keep satisfying
 
-- ≤ 5 s thinking per move for **both** players (`Limit(time=5.0)`; our engine stops ~60 ms early).
+- ≤ 5 s thinking per move for **both** players (`Limit(time=5.0)`). Our engine enforces it itself: hard
+  ceiling `MaxThinkMs` = 4750 ms whatever the GUI sends, plus a 150 ms margin under `movetime`. The runner
+  records `ourMaxMoveMs` and any `timeViolations` per game; `python backend/timecheck.py` proves it on
+  positions from real games. Run timecheck after any change to search, threading or time management.
 - Stockfish strength set only via `UCI_LimitStrength: True` + `UCI_Elo`.
 - A draw is not a win; the ladder only advances on `winner: "us"` (our engine uses contempt to avoid draws).
 - Every game saved with its Elo (runner does this) and replayable on a graphical board (frontend).

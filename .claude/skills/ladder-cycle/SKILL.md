@@ -10,7 +10,13 @@ See CLAUDE.md for commands and PATH setup.
 
 ## 1. Play
 
-1. Make sure the engine is built: `cd backend/engine && cargo build --release`.
+0. **Don't start a second game.** If `games/live.json` has `"active": true` and its `updatedAt` is less
+   than 90 s old, a game is already running: find its log (newest `backend/logs/game-*.log`), wait for its
+   `RESULT` line with the Monitor tool, and continue from step 2 (Analyze) with that game.
+   Also skip to step 2 if the newest game in `games/manifest.json` has no `analysis` yet.
+1. If `backend/engine/PENDING.md` exists, do what it says first (staged changes to build and test, and a
+   game to analyze), then delete it. Otherwise make sure the engine is built:
+   `cd backend/engine && cargo build --release`.
 2. Read `games/manifest.json` → `nextElo` (auto-advances only after a **win**; draws/losses retry).
 3. Start the game **detached** (it takes 5–20 min, longer than the 10-min tool timeout):
    ```
@@ -38,7 +44,8 @@ Invoke the `analyze-game` skill with `games/<STEM>.json`. It runs full-strength 
    ```
    python backend/selfplay.py --baseline backend/engine/baseline/chezz.exe --games 16 --time 0.1
    ```
-   - Exit code 0 (≥ 40%): keep the change.
+   - Exit code 0 (≥ 40%): keep the change — but if it touched search, threading or time management,
+     also run `python backend/timecheck.py --positions 10` (≈1 min) and revert on any move over 5000 ms.
    - Exit code 1: revert the source change (restore the baseline exe too, keep the version bump out),
      and append "reverted: <change> — selfplay <score>" to the Decision section of the analysis file.
 

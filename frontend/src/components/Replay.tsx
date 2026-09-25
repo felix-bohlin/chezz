@@ -121,6 +121,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const sfArmy = ourArmy === 'w' ? 'b' : 'w'
   const outcome = OUTCOME[game.winner]
   const lastUs = [...game.moves.slice(0, ply)].reverse().find((m) => m.by === 'us')
+  const povSign = game.ourColor === 'white' ? 1 : -1
 
   const pairs: { no: number; white?: { m: (typeof game.moves)[0]; i: number }; black?: { m: (typeof game.moves)[0]; i: number } }[] = []
   game.moves.forEach((m, i) => {
@@ -218,8 +219,15 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               </b>
             </div>
             <div>
-              <span>Eval (white)</span>
-              <b>{current ? formatEval(current.evalCp, current.mate) : '0.00'}</b>
+              <span>Chezz eval</span>
+              <b>
+                {lastUs
+                  ? formatEval(
+                      lastUs.evalCp === null ? null : lastUs.evalCp * povSign,
+                      lastUs.mate === null ? null : lastUs.mate * povSign,
+                    )
+                  : '0.00'}
+              </b>
             </div>
             <div>
               <span>Our depth</span>
@@ -233,7 +241,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
         </div>
 
         <div className="px-panel">
-          <EvalChart moves={game.moves} ply={ply} onSeek={seek} />
+          <EvalChart moves={game.moves} ply={ply} ourColor={game.ourColor} onSeek={seek} />
         </div>
 
         <div className="px-panel movelist-panel">

@@ -514,13 +514,27 @@ button {
 .eval-mid { fill: var(--ink); opacity: 0.5; }
 .eval-cursor { fill: var(--gold); }
 .eval-white { fill: #2f3f73; }
-.eval-legend {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  margin-top: 6px;
-  opacity: 0.75;
+.eval-headline {
+  font-family: var(--font-num);
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 8px;
 }
+.eval-us { color: #2f6b2a; }
+.eval-them { color: var(--vermilion-dark); }
+.eval-even { color: var(--ink-soft); }
+.eval-plot {
+  position: relative;
+}
+.eval-label {
+  position: absolute;
+  left: 8px;
+  font-size: 11px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.eval-label-top { top: 5px; }
+.eval-label-bottom { bottom: 5px; }
 .movelist-panel {
   padding-bottom: 10px;
 }

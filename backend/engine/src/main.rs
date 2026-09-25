@@ -17,6 +17,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const MOVE_OVERHEAD_MS: u64 = 150;
 const DEFAULT_HASH_MB: usize = 256;
 const DEFAULT_THREADS: usize = 4;
+/// Absolute ceiling on thinking time per move, whatever the GUI sends (competition rule: 5 s).
+const DEFAULT_MAX_THINK_MS: u64 = 4750;
 
 fn main() {
     // Deep recursion with per-frame move lists needs more than the default Windows 1MB stack.
@@ -32,6 +34,7 @@ fn uci_loop() {
     let mut searcher = Engine::new(DEFAULT_HASH_MB, DEFAULT_THREADS);
     let mut pos = Chess::default();
     let mut history: Vec<u64> = Vec::new();
+    let mut max_think_ms = DEFAULT_MAX_THINK_MS;
 
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
@@ -44,11 +47,12 @@ fn uci_loop() {
                 println!("option name Hash type spin default {DEFAULT_HASH_MB} min 1 max 2048");
                 println!("option name Threads type spin default {DEFAULT_THREADS} min 1 max 64");
                 println!("option name Contempt type spin default 25 min -200 max 200");
+                println!("option name MaxThinkMs type spin default {DEFAULT_MAX_THINK_MS} min 10 max 4900");
                 println!("uciok");
             }
             "isready" => println!("readyok"),
             "ucinewgame" => searcher.new_game(),
-            "setoption" => set_option(&tokens, &mut searcher),
+            "setoption" => set_option(&tokens, &mut searcher, &mut max_think_ms),
             "position" => {
                 if let Some((p, h)) = parse_position(&tokens) {
                     pos = p;
@@ -56,7 +60,7 @@ fn uci_loop() {
                 }
             }
             "go" => {
-                let limits = parse_go(&tokens, pos.turn());
+                let limits = parse_go(&tokens, pos.turn(), max_think_ms);
                 let (best, _, _) = searcher.think(&pos, &history, limits, true);
                 match best {
                     Some(m) => println!("bestmove {}", uci(&m)),
@@ -72,7 +76,7 @@ fn uci_loop() {
     }
 }
 
-fn set_option(tokens: &[&str], searcher: &mut Engine) {
+fn set_option(tokens: &[&str], searcher: &mut Engine, max_think_ms: &mut u64) {
     let name_i = tokens.iter().position(|t| *t == "name");
     let value_i = tokens.iter().position(|t| *t == "value");
     let (Some(n), Some(v)) = (name_i, value_i) else { return };
@@ -82,6 +86,7 @@ fn set_option(tokens: &[&str], searcher: &mut Engine) {
         "hash" => searcher.set_hash(value.clamp(1, 2048) as usize),
         "threads" => searcher.set_threads(value.clamp(1, 64) as usize),
         "contempt" => searcher.set_contempt(value.clamp(-200, 200) as i32),
+        "maxthinkms" => *max_think_ms = value.clamp(10, 4900) as u64,
         _ => {}
     }
 }
@@ -113,7 +118,7 @@ fn parse_position(tokens: &[&str]) -> Option<(Chess, Vec<u64>)> {
     Some((pos, history))
 }
 
-fn parse_go(tokens: &[&str], turn: Color) -> Limits {
+fn parse_go(tokens: &[&str], turn: Color, max_think_ms: u64) -> Limits {
     let get = |key: &str| -> Option<u64> {
         tokens
             .iter()
@@ -122,6 +127,13 @@ fn parse_go(tokens: &[&str], turn: Color) -> Limits {
             .and_then(|v| v.parse::<i64>().ok())
             .map(|v| v.max(0) as u64)
     };
+    let limits = requested_limits(&get, turn);
+    let cap = Duration::from_millis(max_think_ms);
+    let hard = limits.hard.min(cap);
+    Limits { soft: limits.soft.min(hard), hard, max_depth: limits.max_depth }
+}
+
+fn requested_limits(get: &dyn Fn(&str) -> Option<u64>, turn: Color) -> Limits {
     let day = Duration::from_secs(86_400);
     if let Some(mt) = get("movetime") {
         // Fixed per-move time can't be banked, so search right up to the deadline.
