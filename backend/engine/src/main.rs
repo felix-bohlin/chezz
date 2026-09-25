@@ -13,7 +13,8 @@ use search::{Engine, Limits, hash_of, uci};
 
 const NAME: &str = "chezz";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const MOVE_OVERHEAD_MS: u64 = 60;
+// Margin for thread joins and UCI round-trips so the wall-clock move time stays under the 5 s rule.
+const MOVE_OVERHEAD_MS: u64 = 150;
 const DEFAULT_HASH_MB: usize = 256;
 const DEFAULT_THREADS: usize = 4;
 

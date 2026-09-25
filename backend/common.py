@@ -12,8 +12,9 @@ STOCKFISH = ROOT / "backend" / "tools" / "stockfish" / "stockfish" / "stockfish-
 ENGINE = ROOT / "backend" / "engine" / "target" / "release" / "chezz.exe"
 PROGRESS = ROOT / "PROGRESS.md"
 
-# Big steps while we win comfortably, finer steps where it gets hard: the prize is the highest win.
-LADDER = [1320, 1400, 1500, 1800, 2100, 2300, 2500, 2600, 2700, 2800, 2900, 3000, 3100, 3190]
+# 1320-1500 were the warm-up; after that the ladder jumps to 2500 and climbs in 200-Elo steps
+# (the prize is the highest win, and 3190 is Stockfish's maximum UCI_Elo).
+LADDER = [1320, 1400, 1500, 2500, 2700, 2900, 3100, 3190]
 
 
 def git_commit() -> str:
