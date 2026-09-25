@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use shakmaty::zobrist::Zobrist64;
 use shakmaty::{CastlingMode, Chess, Color, EnPassantMode, Move, Position, Role};
 
-use crate::eval::{SEE_VAL, evaluate, pst_delta, ri, see};
+use crate::eval::{SEE_VAL, evaluate, ri, see};
 use crate::tt::{BOUND_EXACT, BOUND_LOWER, BOUND_UPPER, TT};
 
 pub const INF: i32 = 32000;
@@ -14,8 +14,6 @@ pub const MATE_BOUND: i32 = MATE - 1000;
 pub const MAX_PLY: usize = 128;
 
 const SKIP: i32 = i32::MIN;
-/// Scales piece-square gain into history units (history saturates around ±16k).
-const PST_ORDER_WEIGHT: i32 = 16;
 
 pub fn hash_of(pos: &Chess) -> u64 {
     pos.zobrist_hash::<Zobrist64>(EnPassantMode::Legal).0
@@ -423,8 +421,7 @@ impl Searcher {
             return 8_000_000;
         }
         let side = if pos.turn() == Color::White { 0 } else { 1 };
-        let pst = m.from().map_or(0, |from| pst_delta(m.role(), pos.turn(), from, m.to()));
-        self.history[side][e as usize & 63][(e as usize >> 6) & 63] + PST_ORDER_WEIGHT * pst
+        self.history[side][e as usize & 63][(e as usize >> 6) & 63]
     }
 
     fn update_history(&mut self, side: usize, m: &Move, bonus: i32) {
