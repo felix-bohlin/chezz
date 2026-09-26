@@ -51,4 +51,5 @@ The frontend in `frontend/` is a **2D pixel-art canvas** (`src/pixel/`), not a 3
 
 - The line database is plain data. Anyone can add lines; follow the voice rules in [02-cast.md](02-cast.md) and the writing rules in [03-dialogue-system.md](03-dialogue-system.md#writing-lines).
 - **Implemented:** the dialogue engine (`frontend/src/story/dialogue.ts`), speech bubbles on the replay board (`Board.tsx`, with an Off / Key / All toggle), and music and sound following the replay (`Replay.tsx`, with a ♪ toggle).
-- **Not yet implemented:** the piece reactions in [04](04-animation-reactions.md) and the intro scroll and end screens in [01](01-intro-story.md).
+- **Implemented:** the intro scroll (`components/IntroScroll.tsx`, with panels painted in `pixel/intro.ts` and text in `story/intro.ts`), the per-game title card, and the end screens with the lords' closing lines (`Replay.tsx`, `buildEnding` in `story/dialogue.ts`).
+- **Not yet implemented:** the piece reactions in [04](04-animation-reactions.md).

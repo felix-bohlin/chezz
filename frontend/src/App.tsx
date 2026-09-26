@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Dojo } from './components/Dojo'
+import { IntroScroll } from './components/IntroScroll'
 import { Live, useLive } from './components/Live'
 import { Replay } from './components/Replay'
 import { Scenery } from './components/Scenery'
 import { loadManifest } from './lib/data'
+import { introUnseen } from './story/intro'
 import type { Manifest } from './types/game'
 
 const POLL_MS = 15000
@@ -21,6 +23,7 @@ function useHashRoute(): string {
 export default function App() {
   const [manifest, setManifest] = useState<Manifest | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [intro, setIntro] = useState(introUnseen)
   const hash = useHashRoute()
   const live = useLive(5000)
   const liveGameCount = live?.active ? null : live?.lastGameId
@@ -56,6 +59,9 @@ export default function App() {
             <span className="brand-mon">棋</span> CHEZZ
           </a>
           <div className="topbar-actions">
+            <button className="px-btn" onClick={() => setIntro(true)} aria-label="Play the intro scroll">
+              巻 Intro
+            </button>
             {live?.active && !isLive && (
               <a className="px-btn live-btn" href="#/live">
                 <span className="live-dot" /> LIVE vs {live.stockfishElo}
@@ -85,6 +91,7 @@ export default function App() {
             </>
           )}
         </main>
+        {intro && <IntroScroll onClose={() => setIntro(false)} />}
         <footer className="footer">Rust engine vs Stockfish 19 · every battle saved, every move replayable</footer>
       </div>
     </>
