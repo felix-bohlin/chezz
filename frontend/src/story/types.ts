@@ -142,4 +142,6 @@ export interface Bubble {
   text: string; // tokens already filled
   mood: Mood;
   isReply: boolean;
+  /** Shown in "key" display mode (key-moment primary, or its non-optional reply). */
+  key: boolean;
 }

@@ -4,6 +4,7 @@ This spec explains how the frontend decides, for every ply, **which piece speaks
 
 - Types: [`frontend/src/story/types.ts`](../../frontend/src/story/types.ts)
 - Line data: [`frontend/src/story/lines.json`](../../frontend/src/story/lines.json)
+- Implementation: [`frontend/src/story/dialogue.ts`](../../frontend/src/story/dialogue.ts), where `buildStory(game)` returns a `PlyStory` (bubbles, situation, phase, material, danger) per ply
 - Library: `chess.js` ≥ 1.0 (`attackers`, `isAttacked`, `remove`, `move()` flags)
 
 ## 1. Pipeline
@@ -110,6 +111,7 @@ E[i] = moves[i].mate == null ? moves[i].evalCp ?? undefined : undefined
 
 - **blunder at ply i:** `sign(mover) * (E[i+1] - E[i-1]) <= -150`, where `E[i+1]` is the opponent's evaluation after replying. If `E[i+1]` is missing, use `E[i]`. Skip when both |E| > 600 (the game is already decided).
 - **brilliant at ply i:** `sacrifice` is detected AND `sign(mover) * (E[i] - E[i-1]) >= -50` (the engine still thinks it is fine after giving material away).
+- **Stockfish zero-eval noise:** Stockfish sometimes records exactly `0` in clearly decided positions. A `0` next to an eval of |E| ≥ 200 is treated as missing.
 - If any eval needed is missing, skip these situations. The ply falls through to its next situation.
 
 ### 2.5 Context values used by line conditions
