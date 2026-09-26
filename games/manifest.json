@@ -211,7 +211,7 @@
     {
       "id": "0015",
       "file": "0015_elo-3100_draw.json",
-      "analysis": null,
+      "analysis": "0015_elo-3100_draw.analysis.md",
       "date": "2026-09-26T08:43:34Z",
       "stockfishElo": 3100,
       "ourColor": "white",
