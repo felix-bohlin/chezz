@@ -273,7 +273,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       <section className="replay-main">
         {theirs}
         <div className="board-wrap">
-          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} />
+          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} tokugawa={ourArmy} />
           {senseiComment && (
             <Sensei key={senseiComment.ply} comment={senseiComment} onDismiss={() => setSenseiDismissed(ply)} />
           )}
