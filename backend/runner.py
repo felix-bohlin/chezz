@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import datetime as dt
 import json
 import pathlib
@@ -40,6 +41,28 @@ def white_eval(info: dict) -> tuple[int | None, int | None]:
     w = score.white()
     cp = w.score(mate_score=EVAL_CLAMP)
     return max(-EVAL_CLAMP, min(EVAL_CLAMP, cp)), w.mate()
+
+
+def sf_play(sf: chess.engine.SimpleEngine, board: chess.Board) -> chess.engine.PlayResult:
+    """Stockfish's move, with the eval of its last completed search iteration.
+
+    With UCI_LimitStrength, Stockfish always prints one extra info line after the search for the move its
+    weakening picked. When that isn't the search's best move it has no score, and Stockfish reports cp 0.
+    play() keeps only the last info line, so we collect all of them via analysis() and drop that one.
+    """
+    def run() -> chess.engine.PlayResult:
+        with sf.analysis(board, chess.engine.Limit(time=MOVE_TIME), info=chess.engine.INFO_ALL) as an:
+            scored = [i for i in an if "score" in i and i.get("multipv", 1) == 1]
+            best = an.wait()
+        return chess.engine.PlayResult(best.move, best.ponder, scored[-2] if len(scored) > 1 else scored[-1] if scored else {})
+
+    # analysis() has no timeout of its own; match play()'s (move time + SimpleEngine.timeout) so a stalled
+    # Stockfish still raises TimeoutError. The caller then quits the process, which unblocks the worker.
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        return pool.submit(run).result(timeout=MOVE_TIME + sf.timeout)
+    finally:
+        pool.shutdown(wait=False)
 
 
 def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
@@ -75,7 +98,10 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
             write_live(live)
             t0 = time.perf_counter()
             try:
-                res = player.play(board, chess.engine.Limit(time=MOVE_TIME), info=chess.engine.INFO_ALL)
+                if is_us:
+                    res = ours.play(board, chess.engine.Limit(time=MOVE_TIME), info=chess.engine.INFO_ALL)
+                else:
+                    res = sf_play(sf, board)
             except TimeoutError:
                 if is_us:
                     termination = "engine-timeout"

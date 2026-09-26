@@ -329,7 +329,7 @@
    "uci": "d3f1",
    "by": "stockfish",
    "fenAfter": "r2q1rk1/3n1p2/p2bbnp1/1p1pp2p/1P6/2N3NP/P1PP1PP1/1RBQRBK1 b - - 1 15",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 20,
    "timeMs": 5001
@@ -461,7 +461,7 @@
    "uci": "a2a4",
    "by": "stockfish",
    "fenAfter": "2rq1rk1/5p2/pn1bb1p1/1p2p3/PP2P2p/7P/2P2PP1/1RBQRBK1 b - - 0 21",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 21,
    "timeMs": 5000
@@ -483,7 +483,7 @@
    "uci": "d1d3",
    "by": "stockfish",
    "fenAfter": "2rq1rk1/5p2/p2bb1p1/1p2p3/nP2P2p/3Q3P/2P2PP1/1RB1RBK1 b - - 1 22",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 21,
    "timeMs": 5000
@@ -505,7 +505,7 @@
    "uci": "d3d6",
    "by": "stockfish",
    "fenAfter": "2rq1rk1/5p2/p2Q2p1/1p2p3/nP2P2p/7P/b1P2PP1/1RB1RBK1 b - - 0 23",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 22,
    "timeMs": 5000
@@ -527,7 +527,7 @@
    "uci": "e1d1",
    "by": "stockfish",
    "fenAfter": "2r2rk1/5p2/p2q2p1/1p2p3/nP2P2p/7P/b1P2PP1/1RBR1BK1 b - - 1 24",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 21,
    "timeMs": 4999
@@ -549,7 +549,7 @@
    "uci": "c1h6",
    "by": "stockfish",
    "fenAfter": "2r2rk1/5p2/p5pB/1p2p3/nP2P2p/7P/b1P2PP1/1R1q1BK1 b - - 1 25",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 21,
    "timeMs": 5000
@@ -615,7 +615,7 @@
    "uci": "g2g3",
    "by": "stockfish",
    "fenAfter": "2r2rk1/5p2/p5pB/1p2p3/1P2P2p/2n2PPP/b7/4qBK1 b - - 0 28",
-   "evalCp": 0,
+   "evalCp": null,
    "mate": null,
    "depth": 191,
    "timeMs": 5000
@@ -676,5 +676,5 @@
    "timeMs": 0
   }
  ],
- "pgn": "[Event \"chezz vs Stockfish ladder\"]\n[Site \"local\"]\n[Date \"2026.09.25\"]\n[Round \"0002\"]\n[White \"Stockfish 19 (UCI_Elo 1400)\"]\n[Black \"chezz 0.1.0 (92ec583-dirty)\"]\n[Result \"0-1\"]\n[StockfishElo \"1400\"]\n[WhiteElo \"1400\"]\n[TimeControl \"5s/move\"]\n[Termination \"checkmate\"]\n\n1. e4 { [%eval 0.27] } 1... e5 { [%eval 0.16] } 2. Ne2 { [%eval 0.00] } 2... Nf6 { [%eval -0.28] } 3. Nbc3 { [%eval -0.38] } 3... Bc5 { [%eval -0.20] } 4. Ng3 { [%eval -0.38] } 4... O-O { [%eval -0.39] } 5. Bd3 { [%eval -0.36] } 5... c6 { [%eval -0.48] } 6. O-O { [%eval -0.41] } 6... d5 { [%eval -0.54] } 7. h3 { [%eval -0.51] } 7... Be6 { [%eval -0.59] } 8. Re1 { [%eval -0.70] } 8... Nbd7 { [%eval -0.55] } 9. Na4 { [%eval 0.00] } 9... Bd6 { [%eval -0.64] } 10. b3 { [%eval -1.26] } 10... a6 { [%eval -0.79] } 11. Rb1 { [%eval 0.00] } 11... b5 { [%eval -1.38] } 12. exd5 { [%eval -2.69] } 12... cxd5 { [%eval -1.21] } 13. Nc3 { [%eval -2.95] } 13... g6 { [%eval -1.18] } 14. b4 { [%eval -3.10] } 14... h5 { [%eval -2.04] } 15. Bf1 { [%eval 0.00] } 15... h4 { [%eval -2.38] } 16. Nge2 { [%eval -5.96] } 16... d4 { [%eval -2.18] } 17. d3 { [%eval -6.70] } 17... dxc3 { [%eval -3.02] } 18. Nxc3 { [%eval -6.49] } 18... Rc8 { [%eval -2.96] } 19. Ne4 { [%eval -6.42] } 19... Nxe4 { [%eval -3.09] } 20. dxe4 { [%eval -6.63] } 20... Nb6 { [%eval -3.11] } 21. a4 { [%eval 0.00] } 21... Nxa4 { [%eval -3.91] } 22. Qd3 { [%eval 0.00] } 22... Ba2 { [%eval -5.13] } 23. Qxd6 { [%eval 0.00] } 23... Qxd6 { [%eval -12.00] } 24. Rd1 { [%eval 0.00] } 24... Qxd1 { [%eval -20.00] } 25. Bh6 { [%eval 0.00] } 25... Qxb1 { [%eval -20.00] } 26. c3 { [%eval #-7] } 26... Nxc3 { [%eval #-6] } 27. f3 { [%eval #-5] } 27... Qe1 { [%eval #-5] } 28. g3 { [%eval 0.00] } 28... Ne2+ { [%eval #-3] } 29. Kg2 { [%eval #-2] } 29... Qxg3+ { [%eval #-2] } 30. Kh1 { [%eval #-1] } 30... Qg1# { [%eval #-1] } 0-1"
+ "pgn": "[Event \"chezz vs Stockfish ladder\"]\n[Site \"local\"]\n[Date \"2026.09.25\"]\n[Round \"0002\"]\n[White \"Stockfish 19 (UCI_Elo 1400)\"]\n[Black \"chezz 0.1.0 (92ec583-dirty)\"]\n[Result \"0-1\"]\n[StockfishElo \"1400\"]\n[WhiteElo \"1400\"]\n[TimeControl \"5s/move\"]\n[Termination \"checkmate\"]\n\n1. e4 { [%eval 0.27] } 1... e5 { [%eval 0.16] } 2. Ne2 { [%eval 0.00] } 2... Nf6 { [%eval -0.28] } 3. Nbc3 { [%eval -0.38] } 3... Bc5 { [%eval -0.20] } 4. Ng3 { [%eval -0.38] } 4... O-O { [%eval -0.39] } 5. Bd3 { [%eval -0.36] } 5... c6 { [%eval -0.48] } 6. O-O { [%eval -0.41] } 6... d5 { [%eval -0.54] } 7. h3 { [%eval -0.51] } 7... Be6 { [%eval -0.59] } 8. Re1 { [%eval -0.70] } 8... Nbd7 { [%eval -0.55] } 9. Na4 { [%eval 0.00] } 9... Bd6 { [%eval -0.64] } 10. b3 { [%eval -1.26] } 10... a6 { [%eval -0.79] } 11. Rb1 { [%eval 0.00] } 11... b5 { [%eval -1.38] } 12. exd5 { [%eval -2.69] } 12... cxd5 { [%eval -1.21] } 13. Nc3 { [%eval -2.95] } 13... g6 { [%eval -1.18] } 14. b4 { [%eval -3.10] } 14... h5 { [%eval -2.04] } 15. Bf1 h4 { [%eval -2.38] } 16. Nge2 { [%eval -5.96] } 16... d4 { [%eval -2.18] } 17. d3 { [%eval -6.70] } 17... dxc3 { [%eval -3.02] } 18. Nxc3 { [%eval -6.49] } 18... Rc8 { [%eval -2.96] } 19. Ne4 { [%eval -6.42] } 19... Nxe4 { [%eval -3.09] } 20. dxe4 { [%eval -6.63] } 20... Nb6 { [%eval -3.11] } 21. a4 Nxa4 { [%eval -3.91] } 22. Qd3 Ba2 { [%eval -5.13] } 23. Qxd6 Qxd6 { [%eval -12.00] } 24. Rd1 Qxd1 { [%eval -20.00] } 25. Bh6 Qxb1 { [%eval -20.00] } 26. c3 { [%eval #-7] } 26... Nxc3 { [%eval #-6] } 27. f3 { [%eval #-5] } 27... Qe1 { [%eval #-5] } 28. g3 Ne2+ { [%eval #-3] } 29. Kg2 { [%eval #-2] } 29... Qxg3+ { [%eval #-2] } 30. Kh1 { [%eval #-1] } 30... Qg1# { [%eval #-1] } 0-1"
 }
