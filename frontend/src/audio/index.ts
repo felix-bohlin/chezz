@@ -46,6 +46,11 @@ export const gameAudio = {
     setTension(target >= current ? target : ((current - 1) as Tension));
   },
 
+  /** Jumped (scrub, step back, click a move): match the new position's tension, play no cues. */
+  seek(p: PlyAudio): void {
+    setTension(tensionFor(p));
+  },
+
   end(result: "victory" | "defeat" | "draw"): void {
     stopMusic();
     playSituation(result);

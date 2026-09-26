@@ -44,11 +44,11 @@ pickSpeaker → pickLine(lines.json)                03-dialogue-system.md
 
 The frontend in `frontend/` is a **2D pixel-art canvas** (`src/pixel/`), not a 3D scene. For now:
 - In [04-animation-reactions.md](04-animation-reactions.md), the **2D column applies**. The 3D descriptions set the mood and target for later polish.
-- Situation detection needs `chess.js` (`pnpm add chess.js`), which isn't a dependency yet.
 - The existing sprites already match most of the cast: ashigaru, ninja, sōhei monk, samurai general, shōgun. The **rook** is a castle keep (tenshu); the `rider` role in [02-cast.md](02-cast.md) is a proposal to replace it.
 - Music and sound: [05-music-sound.md](05-music-sound.md) and `frontend/src/audio/`.
 
 ## Ownership
 
 - The line database is plain data. Anyone can add lines; follow the voice rules in [02-cast.md](02-cast.md) and the writing rules in [03-dialogue-system.md](03-dialogue-system.md#writing-lines).
-- Situation detection and animation are frontend code, specified here, not yet implemented.
+- **Implemented:** the dialogue engine (`frontend/src/story/dialogue.ts`), speech bubbles on the replay board (`Board.tsx`, with an Off / Key / All toggle), and music and sound following the replay (`Replay.tsx`, with a ♪ toggle).
+- **Not yet implemented:** the piece reactions in [04](04-animation-reactions.md) and the intro scroll and end screens in [01](01-intro-story.md).

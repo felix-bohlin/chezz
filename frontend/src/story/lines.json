@@ -194,7 +194,7 @@
   {"id":"a.commander.quiet.02","side":"akechi","role":"commander","situation":"quiet","text":"Watch the passes.","mood":"calm"},
   {"id":"a.commander.hanging.01","side":"akechi","role":"commander","situation":"hanging","text":"Let them strike. They will miss.","mood":"proud"},
   {"id":"a.commander.pinned.01","side":"akechi","role":"commander","situation":"pinned","text":"Chained like a dog. Unacceptable.","mood":"anger"},
-  {"id":"a.commander.forked.01","side":"akechi","role":"commander","situation":"forked","text":"Hm. A sharp one, that ninja.","mood":"anger"},
+  {"id":"a.commander.forked.01","side":"akechi","role":"commander","situation":"forked","text":"Two blades at once? Clever.","mood":"anger"},
   {"id":"a.commander.fallen.01","side":"akechi","role":"commander","situation":"fallen","text":"Lord Mitsuhide... forgive me.","mood":"grief"},
   {"id":"a.commander.king_danger.01","side":"akechi","role":"commander","situation":"king_danger","text":"Guard the lord! Every blade to me!","mood":"anger"},
   {"id":"a.commander.any.01","side":"akechi","role":"commander","situation":"any","text":"The net is closing.","mood":"calm"},

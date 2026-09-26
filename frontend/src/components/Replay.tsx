@@ -1,8 +1,11 @@
 import { marked } from 'marked'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { gameAudio, getSettings, isMusicPlaying, setSettings, stopMusic } from '../audio'
 import { loadAnalysis, loadGame } from '../lib/data'
 import { START_FEN, sideToMove } from '../lib/fen'
 import { spriteUrl } from '../pixel/render'
+import { buildStory, type PlyStory } from '../story/dialogue'
+import type { Bubble, DisplayMode } from '../story/types'
 import type { GameRecord, ManifestEntry } from '../types/game'
 import { Board } from './Board'
 import { EvalChart } from './EvalChart'
@@ -14,6 +17,33 @@ const SPEEDS = [
   { label: '2×', ms: 500 },
   { label: '4×', ms: 250 },
 ]
+
+const BUBBLE_MODES: { mode: DisplayMode; label: string }[] = [
+  { mode: 'off', label: 'Off' },
+  { mode: 'key', label: 'Key' },
+  { mode: 'all', label: 'All' },
+]
+const BUBBLE_MODE_KEY = 'chezz.bubbles'
+
+function loadBubbleMode(): DisplayMode {
+  try {
+    const v = localStorage.getItem(BUBBLE_MODE_KEY)
+    if (v === 'off' || v === 'key' || v === 'all') return v
+  } catch {
+    // storage unavailable — use the default
+  }
+  return 'key'
+}
+
+/** How long a ply's bubbles need on screen to be read (03 §5): reply starts 600 ms after the primary. */
+function readMs(bubbles: Bubble[]): number {
+  const one = (b: Bubble) => Math.min(4000, Math.max(1500, 1200 + 45 * b.text.length))
+  return bubbles.reduce((ms, b) => Math.max(ms, (b.isReply ? 600 : 0) + one(b)), 0)
+}
+
+function plyAudio(s: PlyStory) {
+  return { situation: s.situation ?? undefined, phase: s.phase, material: s.material, kingInDanger: s.kingInDanger }
+}
 
 const OUTCOME = {
   us: { kanji: '勝', word: 'Victory' },
@@ -62,10 +92,49 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [showScroll, setShowScroll] = useState(false)
+  const [bubbleMode, setBubbleMode] = useState<DisplayMode>(loadBubbleMode)
+  const [muted, setMuted] = useState(() => getSettings().muted)
   const moveListRef = useRef<HTMLOListElement>(null)
   const prevTotal = useRef(game.moves.length)
+  const audioPly = useRef(initialPly)
 
   const total = game.moves.length
+  const story = useMemo(() => buildStory(game), [game])
+  const bubbles = useMemo(() => {
+    const all = story[ply]?.bubbles ?? []
+    return bubbleMode === 'off' ? [] : bubbleMode === 'key' ? all.filter((b) => b.key) : all
+  }, [story, ply, bubbleMode])
+
+  const chooseBubbleMode = (mode: DisplayMode) => {
+    setBubbleMode(mode)
+    try {
+      localStorage.setItem(BUBBLE_MODE_KEY, mode)
+    } catch {
+      // non-essential
+    }
+  }
+
+  const toggleSound = () => {
+    setSettings({ muted: !muted })
+    setMuted(!muted)
+  }
+
+  // Sound follows the replay: cues only when advancing exactly one ply; jumps just retune the score (05 §6).
+  useEffect(() => {
+    const prev = audioPly.current
+    audioPly.current = ply
+    const s = story[ply]
+    if (prev === ply || !s) return
+    if (ply !== prev + 1) {
+      gameAudio.seek(plyAudio(s))
+      return
+    }
+    if (!isMusicPlaying()) gameAudio.start()
+    gameAudio.onPly(plyAudio(s))
+    if (!live && ply === total) gameAudio.end(game.winner === 'us' ? 'victory' : game.winner === 'stockfish' ? 'defeat' : 'draw')
+  }, [ply, story, total, live, game.winner])
+
+  useEffect(() => stopMusic, [])
 
   useEffect(() => {
     if (live && total !== prevTotal.current) {
@@ -81,9 +150,11 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       setPlaying(false)
       return
     }
-    const t = setTimeout(() => setPly((p) => p + 1), SPEEDS[speed].ms)
+    // In "key" mode, autoplay lingers on key moments long enough to read them.
+    const hold = bubbleMode === 'key' && bubbles.length ? readMs(bubbles) : 0
+    const t = setTimeout(() => setPly((p) => p + 1), Math.max(SPEEDS[speed].ms, hold))
     return () => clearTimeout(t)
-  }, [playing, ply, total, speed])
+  }, [playing, ply, total, speed, bubbleMode, bubbles])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -158,7 +229,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       <section className="replay-main">
         {theirs}
         <div className="board-wrap">
-          <Board fen={fen} lastMove={current?.uci} flipped={flipped} />
+          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={bubbles} />
           {!live && ply === total && total > 0 && (
             <div className={`result-banner result-${game.winner}`}>
               <div className="result-kanji">{outcome.kanji}</div>
@@ -194,6 +265,29 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               </button>
             ))}
           </div>
+          <div className="speed" role="group" aria-label="Speech bubbles">
+            <span className="control-label" aria-hidden>
+              話
+            </span>
+            {BUBBLE_MODES.map((m) => (
+              <button
+                key={m.mode}
+                className={`px-chip${m.mode === bubbleMode ? ' active' : ''}`}
+                onClick={() => chooseBubbleMode(m.mode)}
+                aria-pressed={m.mode === bubbleMode}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <button
+            className={`px-chip${muted ? '' : ' active'}`}
+            onClick={toggleSound}
+            aria-pressed={!muted}
+            aria-label={muted ? 'Turn sound on' : 'Mute sound'}
+          >
+            {muted ? '♪ Off' : '♪ On'}
+          </button>
         </div>
       </section>
 

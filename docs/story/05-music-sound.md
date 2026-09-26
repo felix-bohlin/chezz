@@ -2,7 +2,7 @@
 
 The Night of Iga has its own score. It is **fully synthesized with the Web Audio API**, so there are no audio files to load or license. It reacts to the **same situations as the dialogue** ([03](03-dialogue-system.md)): a check sounds like a check, and a blunder sounds like a mistake.
 
-Code: [`frontend/src/audio/`](../../frontend/src/audio/). Status: written and typechecked, **not yet wired into the replay UI** (see §6).
+Code: [`frontend/src/audio/`](../../frontend/src/audio/). Status: **wired into the replay** (`Replay.tsx`). Sound starts on the first forward step, and a ♪ On/Off chip in the replay controls mutes it.
 
 ## 1. Sound palette
 
@@ -72,7 +72,7 @@ Each ply plays a **wood click** (the piece landing), then the cue for the ply's 
 - Saved per viewer in `localStorage` (`chezz.audio`); if storage is blocked, the defaults are used.
 - UI: a small speaker icon in the replay controls (mute toggle) plus sliders in a settings popover.
 
-## 6. Wiring it in (to do)
+## 6. Wiring (as implemented in `Replay.tsx`)
 
 ```ts
 import { installUnlock, gameAudio } from "./audio";
@@ -95,4 +95,5 @@ gameAudio.end(winner === "us" ? "victory" : winner === "stockfish" ? "defeat" : 
 
 Rules for the replay UI:
 - **Only play cues when moving forward one ply** (autoplay or step). When the viewer drags the slider, jumps to a move, or steps backward, set the tension for the new position with `setTension` and play no cues. Otherwise scrubbing sounds like a war.
-- The dialogue engine isn't written yet. Until it is, `situation` can come from a simple check: `+` in SAN → `check`, `x` → `capture`, `#` → `checkmate`, `O-O` → `castle`, `=` → `promotion`. This gives most of the audio immediately.
+- `situation`, `phase`, `material` and `kingInDanger` all come from `buildStory(game)[ply]` (`story/dialogue.ts`), so the sound and the bubbles always agree.
+- A jump uses `gameAudio.seek(...)`, which retunes the tension without playing a cue.
