@@ -25,10 +25,12 @@ export interface GameRecord {
   result: '1-0' | '0-1' | '1/2-1/2'
   winner: Winner
   termination: string
-  engine: { name: string; version: string; commit?: string }
+  engine: { name: string; version: string; commit?: string; contempt?: number }
   startFen: string
   moves: GameMove[]
   pgn: string
+  /** Only on `adjudicated_draw` games: the rule that stopped the game and the ply it fired at. */
+  adjudication?: { rule: string; atPly: number }
 }
 
 export interface ManifestEntry {

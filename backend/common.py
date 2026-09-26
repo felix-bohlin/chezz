@@ -26,15 +26,22 @@ ADJUDICATE_MIN_PLY = 80      # not before move 40
 ADJUDICATE_SF_MOVES = 10     # this many consecutive Stockfish moves (20 plies)...
 ADJUDICATE_MAX_CP = 15       # ...each reporting |eval| <= 15 cp and no mate score
 ADJUDICATION_RULE = (f"Stockfish's reported eval within ±{ADJUDICATE_MAX_CP} cp (no mate score) on "
-                     f"{ADJUDICATE_SF_MOVES} consecutive Stockfish moves, from ply {ADJUDICATE_MIN_PLY} on")
+                     f"{ADJUDICATE_SF_MOVES} consecutive Stockfish moves, from ply {ADJUDICATE_MIN_PLY} on, and its "
+                     f"latest move was its own best move")
 
 
 def draw_adjudication_due(moves: list[dict]) -> bool:
-    """True when the draw-adjudication rule holds at the end of `moves` (the game's move records)."""
+    """True when the draw-adjudication rule holds at the end of `moves` (the game's move records).
+
+    Stockfish's eval on a move describes the position before that move. Its latest move must therefore be the
+    best move of that search (`sfBest`): if UCI_LimitStrength picked a weaker move, it may be a real error that
+    no eval covers yet, and adjudicating then would throw away a win. Games recorded before `sfBest` existed
+    never qualify.
+    """
     if len(moves) < ADJUDICATE_MIN_PLY:
         return False
     sf = [m for m in moves if m["by"] == "stockfish"][-ADJUDICATE_SF_MOVES:]
-    return len(sf) == ADJUDICATE_SF_MOVES and all(
+    return len(sf) == ADJUDICATE_SF_MOVES and sf[-1].get("sfBest") is True and all(
         m.get("evalCp") is not None and m.get("mate") is None and abs(m["evalCp"]) <= ADJUDICATE_MAX_CP
         for m in sf
     )

@@ -171,6 +171,9 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
                 "mate": mate,
                 "depth": res.info.get("depth"),
                 "timeMs": ms,
+                # Stockfish's eval describes the position before its move (its best line). Record whether the
+                # move it actually played (after UCI_LimitStrength weakening) was that best move.
+                **({"sfBest": bool(res.info.get("pv")) and res.info["pv"][0] == res.move} if not is_us else {}),
             })
             write_live(live)
             if verbose:

@@ -61,13 +61,43 @@ export function Dojo({ manifest, live, onOpen, map }: Props) {
 
   return (
     <div className="dojo">
-      <header className="hero">
-        <div className="hero-kanji">戦国</div>
-        <h1 className="hero-title">
-          CHEZZ
-          <span className="hero-title-war">TOTAL WAR</span>
-        </h1>
-        <p className="hero-sub">Our engine marches on Stockfish. One province per Elo. Draws do not count.</p>
+      {live?.active && (
+        <a className="px-panel live-banner" href="#/live">
+          <span className="live-dot" />
+          <span className="live-banner-text">
+            <b>Battle #{live.id} is being fought right now</b>
+            <span>
+              Musashi {live.engine.version} as {live.ourColor} vs Stockfish UCI_Elo {live.stockfishElo} · move{' '}
+              {Math.ceil(live.moves.length / 2) || 1}
+            </span>
+          </span>
+          <span className="px-btn px-btn-primary">Watch ▶</span>
+        </a>
+      )}
+
+      <section className="campaign war-table">
+        <h1 className="panel-title">天下統一 Campaign map</h1>
+        <div className="campaign-body">
+          <button className="japan-open" onClick={() => openWarMap()} aria-label="Open the full-screen campaign map">
+            <JapanBoard castles={castles} />
+            <span className="japan-open-hint">⛶ Open the war map</span>
+          </button>
+          <ol className="march">
+            {castles.map((c) => (
+              <li key={c.elo}>
+                <button className={`march-row province-${c.status}`} onClick={() => openWarMap(c.elo)} title={c.tip}>
+                  <span className="march-kanji">{c.province.kanji}</span>
+                  <span className="march-name">{c.province.name}</span>
+                  <span className="march-elo">{c.elo}</span>
+                  <span className="march-state">{STATE[c.status]}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <header className="hero dojo-hero">
         <div className="hero-stats">
           {best ? (
             <a className="px-panel stat stat-best" href={`#/game/${best.id}`}>
@@ -120,42 +150,6 @@ export function Dojo({ manifest, live, onOpen, map }: Props) {
           </div>
         </div>
       </header>
-
-      {live?.active && (
-        <a className="px-panel live-banner" href="#/live">
-          <span className="live-dot" />
-          <span className="live-banner-text">
-            <b>Battle #{live.id} is being fought right now</b>
-            <span>
-              Musashi {live.engine.version} as {live.ourColor} vs Stockfish UCI_Elo {live.stockfishElo} · move{' '}
-              {Math.ceil(live.moves.length / 2) || 1}
-            </span>
-          </span>
-          <span className="px-btn px-btn-primary">Watch ▶</span>
-        </a>
-      )}
-
-      <section className="px-panel campaign">
-        <div className="panel-title">天下統一 Campaign map</div>
-        <div className="campaign-body">
-          <button className="japan-open" onClick={() => openWarMap()} aria-label="Open the full-screen campaign map">
-            <JapanBoard castles={castles} />
-            <span className="japan-open-hint">⛶ Open the war map</span>
-          </button>
-          <ol className="march">
-            {castles.map((c) => (
-              <li key={c.elo}>
-                <button className={`march-row province-${c.status}`} onClick={() => openWarMap(c.elo)} title={c.tip}>
-                  <span className="march-kanji">{c.province.kanji}</span>
-                  <span className="march-name">{c.province.name}</span>
-                  <span className="march-elo">{c.elo}</span>
-                  <span className="march-state">{STATE[c.status]}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
 
       <WarMap open={map.open} elo={map.elo} castles={castles} nextElo={manifest.nextElo} onReplay={onOpen} />
 

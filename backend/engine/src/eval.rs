@@ -25,6 +25,8 @@ const CONNECTED_PASSER_EG: [i32; 8] = [0, 0, 5, 10, 20, 35, 60, 0];
 /// Passed-pawn endgame bonus is divided by this when the enemy king is inside the pawn's square
 /// in a pawn-only ending.
 const CAUGHT_PASSER_DIV: i32 = 4;
+/// Score divisor in an ending where each side's only piece is a bishop and they're on opposite colours.
+const OCB_PURE_DIV: i32 = 3;
 const DOUBLED: (i32, i32) = (10, 20);
 const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
@@ -291,6 +293,12 @@ pub fn evaluate(pos: &Chess) -> i32 {
         king_sq[0].map_or(0, |k| attacks::king_attacks(k).0 | (1u64 << k.to_usize())),
         king_sq[1].map_or(0, |k| attacks::king_attacks(k).0 | (1u64 << k.to_usize())),
     ];
+    let mut bishop_att = [0u64; 2];
+    for (i, c) in [Color::White, Color::Black].into_iter().enumerate() {
+        for sq in b.by_piece(Piece { color: c, role: Role::Bishop }) {
+            bishop_att[i] |= attacks::bishop_attacks(sq, occ).0;
+        }
+    }
 
     let mut mg = [0i32; 2];
     let mut eg = [0i32; 2];
@@ -335,6 +343,15 @@ pub fn evaluate(pos: &Chess) -> i32 {
                                 mg[us] += CONNECTED_PASSER_MG[rel];
                                 pass_eg += CONNECTED_PASSER_EG[rel];
                             }
+                            // An enemy bishop covering the empty stop square blockades from a distance (game 15:
+                            // c6/d5 held by Bd6 and Bh3 scored +3.7 in a dead draw), unless we cover it too.
+                            let stop_bit = if stop < 64 { 1u64 << stop } else { 0 };
+                            let bishop_held = !blocked
+                                && bishop_att[them] & stop_bit != 0
+                                && (bishop_att[us] | pawn_att[us] | king_zone[us]) & stop_bit == 0;
+                            if bishop_held {
+                                pass_eg /= 2;
+                            }
                             // Rule of the square: in a pawn-only ending a passer the enemy king can catch is
                             // worth little (game 12: a fortress with two caught passers scored +2.3).
                             if pure_pawn_ending {
@@ -352,7 +369,9 @@ pub fn evaluate(pos: &Chess) -> i32 {
                                 let stop_sq = Square::new(stop as u32);
                                 let d_them = king_sq[them].map_or(7, |k| k.distance(stop_sq) as i32);
                                 let d_us = king_sq[us].map_or(7, |k| k.distance(stop_sq) as i32);
-                                eg[us] += (PASSED_KING_THEM * d_them - PASSED_KING_US * d_us) * PASSED_KING_W[rel];
+                                // With a bishop holding the stop square, the enemy king needn't come back.
+                                let them_w = if bishop_held { 0 } else { PASSED_KING_THEM };
+                                eg[us] += (them_w * d_them - PASSED_KING_US * d_us) * PASSED_KING_W[rel];
                             }
                         }
                         if m.adjacent[f] & pawns[us] == 0 {
@@ -457,6 +476,16 @@ pub fn evaluate(pos: &Chess) -> i32 {
     let weak = 1 - strong;
     if pawns[strong] == 0 && npm[strong] - npm[weak] <= 3 {
         score /= 4;
+    }
+    // Opposite-coloured bishops are the classic drawing mechanism (game 15: B+P vs B scored +3.5 for 80 plies).
+    let wb = b.by_piece(Piece { color: Color::White, role: Role::Bishop });
+    let bb = b.by_piece(Piece { color: Color::Black, role: Role::Bishop });
+    if wb.count() == 1 && bb.count() == 1 {
+        let colour = |bits: Bitboard| bits.first().map(|s| (s.file().to_usize() + s.rank().to_usize()) % 2);
+        if colour(wb) != colour(bb) {
+            let only_bishops = (b.knights() | b.rooks() | b.queens()).is_empty();
+            score = if only_bishops { score / OCB_PURE_DIV } else { score * 3 / 4 };
+        }
     }
     if phase <= 10 && score.abs() > 300 {
         if let (Some(ks), Some(kw)) = (king_sq[strong], king_sq[weak]) {

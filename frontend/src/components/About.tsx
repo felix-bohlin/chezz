@@ -122,7 +122,7 @@ const LAYERS = [
     kanji: '巻',
     title: '3 · Replayed before it is saved',
     body:
-      'When a game ends the runner replays the whole record from the start position: every move legal, every SAN and FEN reproduced, PGN identical, result and termination matching the final position. The verdict is printed with the game and can never be skipped.',
+      'When a game ends the runner replays the whole record from the start position: every move legal, every SAN and FEN reproduced, PGN identical, result and termination matching the final position (for an adjudicated draw: the final position not over, and the adjudication rule re-derived from the recorded Stockfish evals). The verdict is printed with the game and can never be skipped.',
   },
   {
     kanji: '試',
