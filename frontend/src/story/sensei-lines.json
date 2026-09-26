@@ -35,6 +35,9 @@
   {"id":"s.us.brilliant.05","by":"us","kind":"brilliant","text":"Ohhh! {san}!! Not since the great tournament of '83 have I seen such a thing!"},
   {"id":"s.us.brilliant.06","by":"us","kind":"brilliant","text":"Three hundred years of training. Worth it, for {san}!!"},
   {"id":"s.us.brilliant.07","by":"us","kind":"brilliant","text":"A move like {san} comes once a harvest. Hohoho! Pour the sake!"},
+  {"id":"s.us.brilliant.08","by":"us","kind":"brilliant","text":"{san}!! Hoo... my nose! Nobody look. The move is just too beautiful."},
+  {"id":"s.us.brilliant.09","by":"us","kind":"brilliant","text":"Fetch me a tissue, boy. {san}!! is the most gorgeous thing on this beach."},
+  {"id":"s.us.brilliant.10","by":"us","kind":"brilliant","text":"HOHOHO! {san}!! My blood pressure! Three hundred years old, I cannot take this!"},
 
   {"id":"s.sf.blunder.01","by":"stockfish","kind":"blunder","text":"Ho ho! The fish slipped on its own scales! {san}!"},
   {"id":"s.sf.blunder.02","by":"stockfish","kind":"blunder","text":"{san}? Even the machine dozes after lunch. Pounce, Musashi!"},
@@ -60,6 +63,8 @@
   {"id":"s.sf.brilliant.03","by":"stockfish","kind":"brilliant","text":"Hmph! {san}!! The fish has fangs. Run, Ieyasu, run!"},
   {"id":"s.sf.brilliant.04","by":"stockfish","kind":"brilliant","text":"A beautiful blade. Pointed at us. {san}!!"},
   {"id":"s.sf.brilliant.05","by":"stockfish","kind":"brilliant","text":"{san}!! Even an old hermit must bow. Briefly. Then we fight."},
+  {"id":"s.sf.brilliant.06","by":"stockfish","kind":"brilliant","text":"{san}!! Even the ENEMY gives me a nosebleed. Disgraceful. Gorgeous."},
+  {"id":"s.sf.brilliant.07","by":"stockfish","kind":"brilliant","text":"Hnngh! {san}!! Wipe that up before Musashi sees his master bleeding for the fish."},
 
   {"id":"s.intro.01","kind":"intro","text":"Ho ho. Sit, sit. Watch the boy and maybe you learn something."},
   {"id":"s.intro.02","kind":"intro","text":"Another battle? Wake me if somebody blunders."},

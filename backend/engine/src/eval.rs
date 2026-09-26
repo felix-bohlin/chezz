@@ -22,6 +22,9 @@ const ADV_BLOCKED_EG: [i32; 8] = [0, 0, 0, 0, 5, 12, 20, 0];
 // other's advance). Kept smaller than the analysts' proposal so middlegame pawns aren't overrated.
 const CONNECTED_PASSER_MG: [i32; 8] = [0, 0, 2, 4, 8, 12, 20, 0];
 const CONNECTED_PASSER_EG: [i32; 8] = [0, 0, 5, 10, 20, 35, 60, 0];
+/// Passed-pawn endgame bonus is divided by this when the enemy king is inside the pawn's square
+/// in a pawn-only ending.
+const CAUGHT_PASSER_DIV: i32 = 4;
 const DOUBLED: (i32, i32) = (10, 20);
 const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
@@ -271,6 +274,7 @@ pub fn evaluate(pos: &Chess) -> i32 {
         (b.pawns() & b.black()).0,
     ];
     let pawn_att = [pawn_attacks_bb(pawns[0], Color::White), pawn_attacks_bb(pawns[1], Color::Black)];
+    let pure_pawn_ending = (b.knights() | b.bishops() | b.rooks() | b.queens()).is_empty();
     let mut passers = [0u64; 2];
     for side in 0..2 {
         let mut bb = pawns[side];
@@ -326,11 +330,23 @@ pub fn evaluate(pos: &Chess) -> i32 {
                                 (PASSED_MG[rel], PASSED_EG[rel])
                             };
                             mg[us] += pmg;
-                            eg[us] += peg;
+                            let mut pass_eg = peg;
                             if m.adjacent[f] & passers[us] != 0 {
                                 mg[us] += CONNECTED_PASSER_MG[rel];
-                                eg[us] += CONNECTED_PASSER_EG[rel];
+                                pass_eg += CONNECTED_PASSER_EG[rel];
                             }
+                            // Rule of the square: in a pawn-only ending a passer the enemy king can catch is
+                            // worth little (game 12: a fortress with two caught passers scored +2.3).
+                            if pure_pawn_ending {
+                                let promo = Square::new((if us == 0 { 56 } else { 0 } + f) as u32);
+                                let to_go = (7 - rel).min(5) as i32;
+                                let tempo = (pos.turn() == color.other()) as i32;
+                                let caught = king_sq[them].is_some_and(|k| k.distance(promo) as i32 - tempo <= to_go);
+                                if caught {
+                                    pass_eg /= CAUGHT_PASSER_DIV;
+                                }
+                            }
+                            eg[us] += pass_eg;
                             // Kings racing to the pawn's stop square decide passed-pawn endgames.
                             if rel >= 3 && stop < 64 {
                                 let stop_sq = Square::new(stop as u32);

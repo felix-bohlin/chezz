@@ -136,10 +136,14 @@ const FUZZ = [
   { engine: 'chezz 0.1.9', threads: 1, search: '10 ms', positions: 1885, illegal: 0 },
   { engine: 'chezz 0.1.9', threads: 2, search: '150 ms', positions: 967, illegal: 0 },
   { engine: 'musashi 0.1.10', threads: 4, search: '50 ms', positions: 1608, illegal: 0 },
+  { engine: 'musashi 0.1.12', threads: 4, search: '10 ms', positions: 2055, illegal: 0 },
 ] as const
 
 /** `python backend/timecheck.py` runs: every sample timed like move 1 of a game (ucinewgame + go). */
-const TIMECHECK: readonly { engine: string; samples: number; avg: number; max: number; overBudget: number }[] = []
+const TIMECHECK = [
+  { engine: 'musashi 0.1.12', run: 'run 1', samples: 20, avg: 4332, max: 4783, overBudget: 0 },
+  { engine: 'musashi 0.1.12', run: 'run 2', samples: 20, avg: 4326, max: 4798, overBudget: 0 },
+] as const
 
 const RULES = [
   {
@@ -348,7 +352,10 @@ export function About({ manifest }: Props) {
           <p className="about-foot">
             Guards now in place: <code>timecheck.py</code> times the engine exactly like move 1 of a game and fails
             any move over {NEAR_MISS_MS} ms, a 150 ms safety budget under the rule. <code>verify_games.py</code>{' '}
-            fails on any move over 5 s that is not already disclosed here with its cause.
+            fails on any move over 5 s that is not already disclosed here with its cause. The timecheck runs below
+            were made on 2026-09-26 while a full-strength Stockfish analysis was running on the same machine. Every
+            sample after the first also wipes a used hash table, which a real game never does, so these are
+            worst-case numbers. Quick samples are positions with a forced move or a mate found early.
           </p>
           {TIMECHECK.length > 0 && (
             <table className="about-table">
@@ -363,8 +370,10 @@ export function About({ manifest }: Props) {
               </thead>
               <tbody>
                 {TIMECHECK.map((t) => (
-                  <tr key={t.engine}>
-                    <td>{t.engine}</td>
+                  <tr key={t.engine + t.run}>
+                    <td>
+                      {t.engine}, {t.run}
+                    </td>
                     <td>{t.samples}</td>
                     <td>{t.avg} ms</td>
                     <td className={t.max > NEAR_MISS_MS ? 'warn' : 'ok'}>{t.max} ms</td>

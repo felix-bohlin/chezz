@@ -1,4 +1,4 @@
-import { hermitUrl } from '../pixel/render'
+import { hermitNosebleedUrl, hermitUrl } from '../pixel/render'
 import { KIND_LABEL, SENSEI_NAME, type SenseiSpeech } from '../story/sensei'
 
 interface Props {
@@ -15,13 +15,26 @@ export function Sensei({ speech }: Props) {
   const n = speech?.note
   const label = n ? KIND_LABEL[n.kind] : null
   const mood = n ? `sensei-${n.kind} sensei-by-${n.by}` : speech ? `sensei-${speech.occasion}` : 'sensei-idle'
+  // An exceptional move is simply too much for the old man.
+  const nosebleed = n?.kind === 'brilliant'
   return (
     <div className={`px-panel sensei-perch ${mood}`}>
       <div className="perch-scene" aria-hidden>
         <span className="perch-sun" />
         <span className="perch-sea" />
         <span className="perch-sand" />
-        <img className="perch-hermit" src={hermitUrl()} alt="" draggable={false} />
+        <span key={speech ? `${speech.ply}-${speech.lineId}` : 'idle'} className="perch-figure">
+          <img className="perch-hermit" src={hermitUrl()} alt="" draggable={false} />
+          {nosebleed && (
+            <>
+              <img className="perch-bleed" src={hermitNosebleedUrl()} alt="" draggable={false} />
+              <span className="perch-drop d1" />
+              <span className="perch-drop d2" />
+              <span className="perch-drop d3" />
+              <span className="perch-drop d4" />
+            </>
+          )}
+        </span>
         {!speech && <span className="perch-zzz">z z Z</span>}
       </div>
       {speech ? (

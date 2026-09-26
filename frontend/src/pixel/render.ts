@@ -1,4 +1,4 @@
-import { HERMIT, HERMIT_PALETTE } from './hermit'
+import { HERMIT, HERMIT_NOSEBLEED, HERMIT_PALETTE } from './hermit'
 import { SPRITES, SPRITE_SIZE, colorFor, type Army, type PieceType } from './sprites'
 
 const cache = new Map<string, string>()
@@ -32,6 +32,21 @@ export function spriteUrl(type: PieceType, army: Army): string {
 }
 
 export { SPRITE_SIZE }
+
+/** Same size as the hermit, transparent except the nosebleed, so it can sit on top and drip in. */
+export function hermitNosebleedUrl(): string {
+  let url = cache.get('hermit-bleed')
+  if (!url) {
+    const rows = HERMIT.map((r) => [...'.'.repeat(r.length)])
+    for (const [x, y, light] of HERMIT_NOSEBLEED) rows[y][x] = light ? 'B' : 'b'
+    url = gridToUrl(
+      rows.map((r) => r.join('')),
+      (k) => (k === 'B' ? '#e8283c' : k === 'b' ? '#9a1020' : null),
+    )
+    cache.set('hermit-bleed', url)
+  }
+  return url
+}
 
 export function hermitUrl(): string {
   let url = cache.get('hermit')
