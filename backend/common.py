@@ -15,7 +15,7 @@ PROGRESS = ROOT / "PROGRESS.md"
 
 # 1320-1500 were the warm-up; after that the ladder jumps to 2500 and climbs in 200-Elo steps
 # (the prize is the highest win, and 3190 is Stockfish's maximum UCI_Elo).
-LADDER = [1320, 1400, 1500, 2500, 2700, 2900, 3100, 3190]
+LADDER = [1320, 1400, 1500, 2500, 2700, 2900, 3000, 3100, 3190]
 
 # Draw adjudication: a game Stockfish itself scores as dead level for a long stretch is stopped as a draw
 # instead of being shuffled out to a 50-move or repetition draw (game 15 ran 366 plies that way). Stockfish's

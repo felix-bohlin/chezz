@@ -447,7 +447,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
         )}
       </aside>
       {/* Fixed to the bottom of the viewport; lives here so he only paces on replays. */}
-      {senseiOn && sensei.size > 0 && <Sensei speech={senseiComment} />}
+      {senseiOn && sensei.size > 0 && <Sensei speech={senseiComment} mate={current?.san.endsWith('#') ? ply : undefined} />}
     </div>
   )
 }
