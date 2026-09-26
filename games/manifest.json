@@ -197,7 +197,7 @@
     {
       "id": "0014",
       "file": "0014_elo-3100_loss.json",
-      "analysis": null,
+      "analysis": "0014_elo-3100_loss.analysis.md",
       "date": "2026-09-26T08:28:33Z",
       "stockfishElo": 3100,
       "ourColor": "black",

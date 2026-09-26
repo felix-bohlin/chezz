@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { playSituation, setTension, startMusic, stopMusic } from '../audio'
 import { paintPanel } from '../pixel/intro'
+import { hermitUrl } from '../pixel/render'
 import { HISTORY_NOTE, INTRO_PANELS, markIntroSeen, type IntroPanel } from '../story/intro'
+import { SENSEI_NAME } from '../story/sensei'
 
 /** Time on each panel: enough to read the narration slowly, never under 9 s. */
 const panelMs = (p: IntroPanel) => Math.max(9000, 5000 + 75 * p.narration.length)
@@ -16,7 +18,14 @@ function Panel({ panel }: { panel: IntroPanel }) {
       <canvas ref={canvas} className="intro-art" aria-hidden="true" />
       <figcaption>
         <div className="intro-caption">{panel.caption}</div>
-        <p className="intro-narration">{panel.narration}</p>
+        {/* Master Roshi tells the story: his sprite beside a speech bubble holding the narration. */}
+        <div className="intro-narrator">
+          <img className="intro-roshi" src={hermitUrl()} alt={SENSEI_NAME} draggable={false} />
+          <blockquote className="intro-bubble">
+            <span className="intro-bubble-who">{SENSEI_NAME}</span>
+            <p className="intro-narration">{panel.narration}</p>
+          </blockquote>
+        </div>
       </figcaption>
     </figure>
   )

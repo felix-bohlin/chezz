@@ -1,11 +1,15 @@
 import type { LiveState } from '../lib/data'
-import { spriteUrl } from '../pixel/render'
-import type { Manifest, ManifestEntry } from '../types/game'
+import { japanMap, provincesFor } from '../pixel/japan'
+import type { Manifest } from '../types/game'
+import { openWarMap, STATE, type Castle, type Status } from '../lib/warmap'
+import { JapanBoard, WarMap } from './WarMap'
 
 interface Props {
   manifest: Manifest
   live: LiveState | null
   onOpen: (id: string) => void
+  /** From the #/map[/elo] route: the full-screen campaign map and the province open on it. */
+  map: { open: boolean; elo?: number }
 }
 
 const RESULT = {
@@ -14,11 +18,9 @@ const RESULT = {
   draw: { kanji: '分', label: 'Draw' },
 } as const
 
-type Status = 'conquered' | 'contested' | 'next' | 'locked'
-
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-export function Dojo({ manifest, live, onOpen }: Props) {
+export function Dojo({ manifest, live, onOpen, map }: Props) {
   const games = manifest.games
   const wins = games.filter((g) => g.winner === 'us').length
   const draws = games.filter((g) => g.winner === 'draw').length
@@ -37,13 +39,25 @@ export function Dojo({ manifest, live, onOpen }: Props) {
     : 'First attempt coming up'
   const pct = (n: number) => `${games.length ? (n / games.length) * 100 : 0}%`
 
-  const statusOf = (elo: number): { status: Status; win?: ManifestEntry; attempts: number } => {
+  const statusOf = (elo: number): Pick<Castle, 'status' | 'win' | 'games'> => {
     const at = games.filter((g) => g.stockfishElo === elo)
     const win = at.find((g) => g.winner === 'us')
-    if (win) return { status: 'conquered', win, attempts: at.length }
-    if (elo === manifest.nextElo) return { status: at.length ? 'contested' : 'next', attempts: at.length }
-    return { status: 'locked', attempts: at.length }
+    const status: Status = win ? 'conquered' : elo !== manifest.nextElo ? 'locked' : at.length ? 'contested' : 'next'
+    return { status, win, games: at }
   }
+
+  const japan = japanMap()
+  const provinces = provincesFor(manifest.ladder.length)
+  const castles: Castle[] = manifest.ladder.map((elo, i) => {
+    const s = statusOf(elo)
+    const tip =
+      s.status === 'conquered'
+        ? `Conquered in battle #${s.win!.id}`
+        : s.games.length
+          ? `${plural(s.games.length, 'battle', 'battles')}, not yet won`
+          : 'Not yet attempted'
+    return { elo, ...s, tip, province: provinces[i], ...japan.at(provinces[i].at) }
+  })
 
   return (
     <div className="dojo">
@@ -123,42 +137,27 @@ export function Dojo({ manifest, live, onOpen }: Props) {
 
       <section className="px-panel campaign">
         <div className="panel-title">天下統一 Campaign map</div>
-        <div className="provinces">
-          {manifest.ladder.map((elo, i) => {
-            const s = statusOf(elo)
-            return (
-              <button
-                key={elo}
-                className={`province province-${s.status}`}
-                disabled={!s.win}
-                onClick={() => s.win && onOpen(s.win.id)}
-                title={
-                  s.status === 'conquered'
-                    ? `Conquered in battle #${s.win!.id}. Click to replay`
-                    : s.attempts
-                      ? `${s.attempts} battle(s), not yet won`
-                      : 'Not yet attempted'
-                }
-              >
-                {i > 0 && <span className="road" />}
-                <span className="province-flag">
-                  {s.status === 'conquered' ? (
-                    <img src={spriteUrl('p', 'w')} alt="" />
-                  ) : s.status === 'locked' ? (
-                    <span className="fog">霧</span>
-                  ) : (
-                    <img src={spriteUrl('r', 'b')} alt="" />
-                  )}
-                </span>
-                <span className="province-elo">{elo}</span>
-                <span className="province-state">
-                  {s.status === 'conquered' ? '制圧' : s.status === 'locked' ? '—' : s.status === 'next' ? '次' : '交戦'}
-                </span>
-              </button>
-            )
-          })}
+        <div className="campaign-body">
+          <button className="japan-open" onClick={() => openWarMap()} aria-label="Open the full-screen campaign map">
+            <JapanBoard castles={castles} />
+            <span className="japan-open-hint">⛶ Open the war map</span>
+          </button>
+          <ol className="march">
+            {castles.map((c) => (
+              <li key={c.elo}>
+                <button className={`march-row province-${c.status}`} onClick={() => openWarMap(c.elo)} title={c.tip}>
+                  <span className="march-kanji">{c.province.kanji}</span>
+                  <span className="march-name">{c.province.name}</span>
+                  <span className="march-elo">{c.elo}</span>
+                  <span className="march-state">{STATE[c.status]}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
+
+      <WarMap open={map.open} elo={map.elo} castles={castles} nextElo={manifest.nextElo} onReplay={onOpen} />
 
       <section className="px-panel battles">
         <div className="panel-title">合戦記録 Battle records</div>

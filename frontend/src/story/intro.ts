@@ -1,4 +1,5 @@
 // Intro scroll script and end-screen titles. Spec: docs/story/01-intro-story.md.
+// Master Roshi (story/sensei.ts) narrates: every line is spoken by him from a speech bubble.
 
 export type PanelArt = 'sakai' | 'honnoji' | 'betrayal' | 'cornered' | 'oath' | 'board'
 
@@ -12,32 +13,32 @@ export const INTRO_PANELS: IntroPanel[] = [
   {
     art: 'sakai',
     caption: 'Sakai, dawn',
-    narration: 'Summer, 1582. Lord Tokugawa Ieyasu is a guest in Sakai, with only a handful of men.',
+    narration: 'Hohoho! Sit down, sit down. Summer, 1582. Lord Tokugawa Ieyasu is a guest in Sakai, with only a handful of men.',
   },
   {
     art: 'honnoji',
     caption: 'Kyoto, night',
-    narration: 'In Kyoto, the temple Honnō-ji burns. Oda Nobunaga, master of the realm, is dead.',
+    narration: 'That same night, in Kyoto, the temple Honnō-ji burns. Oda Nobunaga, master of the realm, is dead.',
   },
   {
     art: 'betrayal',
     caption: 'The betrayal',
-    narration: 'His own general, Akechi Mitsuhide, has betrayed him. Now Akechi hunts every one of Nobunaga’s allies.',
+    narration: 'His own general, Akechi Mitsuhide, betrayed him. Now Akechi hunts every one of Nobunaga’s allies. Nasty business.',
   },
   {
     art: 'cornered',
     caption: 'Cornered',
-    narration: 'Ieyasu is cut off from home. Between him and his castle lie the mountains of Iga — bandits, hunters, and Akechi’s scouts.',
+    narration: 'Ieyasu is cut off from home. Between him and his castle lie the mountains of Iga: bandits, hunters, and Akechi’s scouts.',
   },
   {
     art: 'oath',
     caption: 'The oath',
-    narration: 'One man steps forward. Hattori Hanzō, whom they call the Demon. “I know the Iga roads, my lord. I will bring you home.”',
+    narration: 'Then one man steps forward. Hattori Hanzō, whom they call the Demon. “I know the Iga roads, my lord. I will bring you home.”',
   },
   {
     art: 'board',
     caption: 'The board',
-    narration: 'Every game is that night, replayed.',
+    narration: 'Every game is that night, replayed. Now watch closely, and don’t blink.',
   },
 ]
 

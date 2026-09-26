@@ -178,7 +178,9 @@ button {
 .px-btn:focus-visible,
 .px-chip:focus-visible,
 .mv:focus-visible,
-.province:focus-visible,
+.castle:focus-visible,
+.japan-open:focus-visible,
+.march-row:focus-visible,
 .battle-card:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;
@@ -652,40 +654,149 @@ button {
 .campaign {
   margin-bottom: 24px;
 }
-.provinces {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px 0;
-  padding: 6px 0 4px;
+.campaign-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 20px;
+  align-items: start;
 }
-.province {
+.japan {
   position: relative;
-  width: 88px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  width: 100%;
+  max-width: 1180px;
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(26, 18, 32, 0.4);
+}
+.japan svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.jp-sea { fill: #6f97a3; }
+.jp-waves { fill: #5a8290; }
+.jp-shallows { fill: #8fb5b4; }
+.jp-coast { fill: var(--ink-soft); }
+.jp-land { fill: #d9cf9f; }
+.jp-road {
+  stroke: var(--washi);
+  stroke-width: 0.7;
+  stroke-dasharray: 1.2 1;
+  opacity: 0.8;
+}
+.jp-road.jp-road-taken {
+  stroke: var(--vermilion);
+  stroke-width: 0.9;
+  opacity: 1;
+}
+.castle {
+  position: absolute;
+  z-index: 1;
+  width: 0;
+  height: 0;
   padding: 0;
   border: 0;
   background: none;
   cursor: default;
 }
-.province:not(:disabled) {
+button.castle,
+.march-row {
   cursor: pointer;
 }
-.road {
+.castle .province-flag {
   position: absolute;
-  top: 28px;
-  right: 60px;
-  width: 56px;
-  height: 0;
-  border-top: 4px dashed var(--washi-dark);
-  z-index: 0;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  border-width: 3px;
 }
-.province-conquered .road,
-.province-contested .road,
-.province-next .road {
-  border-top-color: var(--vermilion);
+.castle .province-flag img {
+  width: 34px;
+  height: 34px;
+}
+.castle .fog {
+  font-size: 20px;
+}
+.castle-label {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  color: #fff8e6;
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 rgba(26, 18, 32, 0.35);
+}
+.castle-label-t .castle-label { bottom: 26px; left: 0; transform: translateX(-50%); }
+.castle-label-b .castle-label { top: 26px; left: 0; transform: translateX(-50%); }
+.castle-label-r .castle-label { left: 26px; top: 0; transform: translateY(-50%); }
+.castle .province-elo {
+  font-size: 20px;
+  color: var(--gold);
+}
+.castle-name {
+  font-size: 12px;
+}
+.province-locked .castle-label {
+  color: #d8cdb4;
+  background: var(--ink-soft);
+}
+.province-locked .castle-label .province-elo {
+  color: #d8cdb4;
+}
+.march {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.march-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  grid-template-areas: 'kanji name elo' 'kanji state state';
+  column-gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  text-align: left;
+  color: var(--ink);
+  background: #fbf3de;
+  border: 2px solid var(--ink);
+}
+.march-row:hover {
+  background: #cfe3b8;
+}
+.march-kanji {
+  grid-area: kanji;
+  align-self: center;
+  font-size: 15px;
+  color: var(--vermilion-dark);
+}
+.march-name { grid-area: name; font-size: 13px; }
+.march-elo {
+  grid-area: elo;
+  font-family: var(--font-num);
+  font-size: 20px;
+  line-height: 1;
+}
+.march-state { grid-area: state; font-size: 11px; opacity: 0.75; }
+.march-row.province-conquered { background: #e3edcf; }
+.march-row.province-next,
+.march-row.province-contested { background: #f6c9a8; }
+.march-row.province-locked { opacity: 0.6; }
+@media (max-width: 900px) {
+  .campaign-body { grid-template-columns: 1fr; }
+  .march { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+@media (max-width: 640px) {
+  .castle-label { display: none; }
+  .castle .province-flag { left: -12px; top: -12px; width: 24px; height: 24px; border-width: 2px; box-shadow: none; }
+  .castle .province-flag img { width: 18px; height: 18px; }
+  .castle .fog { font-size: 12px; }
 }
 .province-flag {
   position: relative;
@@ -729,10 +840,6 @@ button {
   font-family: var(--font-num);
   font-size: 22px;
   line-height: 1;
-}
-.province-state {
-  font-size: 12px;
-  color: var(--vermilion-dark);
 }
 .battle-grid {
   display: grid;
@@ -1290,6 +1397,47 @@ button {
   text-transform: uppercase;
   color: var(--vermilion-dark);
 }
+/* Master Roshi narrates: his sprite on the left, the story in a speech bubble coming from him. */
+.intro-narrator {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: 8px;
+}
+.intro-roshi {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 92px;
+  image-rendering: pixelated;
+  animation: kn-bob 1.6s steps(2) infinite;
+}
+.intro-bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  margin: 0 0 6px;
+  padding: 8px 12px 10px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  animation: kn-pop 300ms steps(3) both;
+}
+.intro-bubble::after {
+  content: '';
+  position: absolute;
+  left: -16px;
+  bottom: 14px;
+  border: 7px solid transparent;
+  border-right: 9px solid var(--ink);
+}
+.intro-bubble-who {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--vermilion-dark);
+}
 .intro-narration {
   margin: 4px 0 0;
   min-height: 2.6em;
@@ -1298,8 +1446,7 @@ button {
 }
 .intro-board .intro-narration {
   font-family: var(--font-display);
-  font-size: 20px;
-  text-align: center;
+  font-size: 18px;
 }
 .intro-nav {
   display: flex;
@@ -1499,6 +1646,16 @@ button {
   .intro-narration {
     font-size: 14px;
   }
+  .intro-narrator {
+    gap: 10px;
+  }
+  .intro-roshi {
+    width: 40px;
+    height: 61px;
+  }
+  .intro-bubble {
+    padding: 6px 10px 8px;
+  }
   .title-card {
     padding: 10px 14px;
   }
@@ -1517,6 +1674,8 @@ button {
   .intro-overlay,
   .intro-paper,
   .intro-honnoji .intro-art,
+  .intro-roshi,
+  .intro-bubble,
   .title-card {
     animation: none !important;
   }
@@ -1656,74 +1815,71 @@ button {
   overflow-x: auto;
 }
 
-/* ---------- Hermit sensei's perch (components/Sensei.tsx) ---------- */
-.sensei-perch {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-  min-height: 176px;
-  padding: 10px;
-}
-.perch-scene {
-  position: relative;
-  flex: none;
-  width: 116px;
-  overflow: hidden;
-  border: 3px solid var(--ink);
-  background: linear-gradient(#f6dfae 0 30%, #f2cf92 30% 52%, #eab877 52% 100%);
-}
-.perch-sun {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 16px;
-  height: 16px;
-  background: var(--vermilion);
-  box-shadow: 0 0 0 3px rgba(210, 60, 42, 0.25);
-}
-.perch-sea {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 52%;
-  height: 22%;
-  background:
-    repeating-linear-gradient(90deg, #cfe6ee 0 6px, transparent 6px 16px) 0 3px / 100% 2px no-repeat,
-    repeating-linear-gradient(90deg, transparent 0 9px, #cfe6ee 9px 14px) 0 11px / 100% 2px no-repeat,
-    #4f8fb0;
-  animation: perch-waves 2.4s steps(4) infinite;
-}
-.perch-sand {
-  position: absolute;
+/* ---------- Hermit sensei pacing the bottom of the screen (components/Sensei.tsx) ---------- */
+/* --x: his left edge in viewport px, --vw: layout width, --dur: walk duration, --face: 1 | -1 (set inline). */
+.roshi {
+  position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 30%;
-  background: #e9cf93;
-  border-top: 3px solid #c9a865;
+  z-index: 2;
+  --w: 90px;
+  --h: 138px;
+  --step: 360ms;
+  --bw: min(340px, calc(var(--vw) - 16px));
+  --bl: clamp(8px, calc(var(--x) + var(--w) / 2 - var(--bw) / 2), calc(var(--vw) - var(--bw) - 8px));
+  height: calc(var(--h) + 6px);
+  pointer-events: none;
 }
-.perch-figure {
+.roshi-walker {
   position: absolute;
-  left: 50%;
-  bottom: 2px;
-  width: 90px;
-  height: 138px;
-  margin-left: -45px;
-  animation: perch-breathe 3.2s steps(2) infinite;
+  left: 0;
+  bottom: 6px;
+  width: var(--w);
+  height: var(--h);
+  transform: translateX(var(--x));
+  transition: transform var(--dur) linear;
 }
-.perch-hermit,
-.perch-bleed {
+/* Facing is flipped on its own element so a turn never squeezes the walk transition through scaleX(0). */
+.roshi-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(var(--face));
+}
+.roshi-figure {
+  position: absolute;
+  inset: 0;
+}
+.roshi-f,
+.roshi-bleed {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   image-rendering: pixelated;
 }
-/* The nosebleed spurts from the nose (sprite x 16-17, y 12) down over the mustache, with flying drops. */
-.perch-bleed {
-  animation: perch-bleed 700ms steps(5) 250ms both;
+/* One pose visible at a time: the frames are stacked and switched by opacity. */
+.roshi-f {
+  opacity: 0;
 }
-.perch-drop {
+.roshi-stand .roshi-f-stand,
+.roshi-speak .roshi-f-stand,
+.roshi-nap .roshi-f-nap {
+  opacity: 1;
+}
+.roshi-walk .roshi-f-walkA { animation: roshi-step-a var(--step) steps(1) infinite; }
+.roshi-walk .roshi-f-walkB { animation: roshi-step-b var(--step) steps(1) infinite; }
+.roshi-walk .roshi-figure { animation: roshi-bob var(--step) steps(2) infinite; }
+.roshi-stand .roshi-figure { animation: roshi-breathe 3.2s steps(2) infinite; }
+/* He jumps: the startled pose flashes for a beat, then the mood reaction below takes over. */
+.roshi-speak .roshi-f-startled { animation: roshi-startle 600ms steps(1) both; }
+.roshi-speak .roshi-f-stand { animation: roshi-unstartle 600ms steps(1) both; }
+/* The nosebleed spurts from the nose (sprite x 16-17, y 12) down over the mustache, with flying drops. */
+.roshi-bleed {
+  animation: roshi-bleed 700ms steps(5) 250ms both;
+}
+.roshi-drop {
   position: absolute;
   left: 55%;
   top: 27%;
@@ -1732,62 +1888,53 @@ button {
   background: #e8283c;
   box-shadow: 0 0 0 2px #9a1020;
   opacity: 0;
-  animation: perch-drop 600ms steps(5) 250ms 4;
+  animation: roshi-drop 600ms steps(5) 250ms 4;
 }
-.perch-drop.d1 { --dx: -30px; --dy: -18px; }
-.perch-drop.d2 { --dx: 26px; --dy: -24px; animation-delay: 400ms; }
-.perch-drop.d3 { --dx: 34px; --dy: 6px; animation-delay: 550ms; }
+.roshi-drop.d1 { --dx: -30px; --dy: -18px; }
+.roshi-drop.d2 { --dx: 26px; --dy: -24px; animation-delay: 400ms; }
+.roshi-drop.d3 { --dx: 34px; --dy: 6px; animation-delay: 550ms; }
 /* ...and it keeps dripping for as long as you linger on the move. */
-.perch-drop.d4 { --dx: -2px; --dy: 60px; width: 4px; height: 4px; animation: perch-drop 1.4s steps(7) 2.6s infinite; }
-.perch-zzz {
+.roshi-drop.d4 { --dx: -2px; --dy: 60px; width: 4px; height: 4px; animation: roshi-drop 1.4s steps(7) 2.6s infinite; }
+.roshi-zzz {
   position: absolute;
-  top: 10px;
-  right: 8px;
+  top: 18%;
+  left: 68%;
   font-family: var(--font-display);
   font-size: 11px;
   letter-spacing: 2px;
-  color: var(--ink-soft);
-  animation: perch-zzz 2.8s steps(4) infinite;
+  white-space: nowrap;
+  color: var(--washi);
+  text-shadow: 2px 2px 0 var(--ink);
+  animation: roshi-zzz 2.8s steps(4) infinite;
 }
-.perch-say {
-  position: relative;
-  flex: 1;
-  min-width: 0;
+/* The speech bubble floats above him, clamped into the viewport; the tail always points at his head. */
+.roshi-say {
+  position: absolute;
+  left: var(--bl);
+  bottom: calc(100% + 12px);
+  width: var(--bw);
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-self: center;
   padding: 7px 10px 8px;
   background: #fff8e6;
   border: 3px solid var(--ink);
   box-shadow: 3px 3px 0 rgba(10, 6, 16, 0.35);
   font-size: 14px;
   line-height: 1.3;
-  animation: perch-say-in 280ms steps(3) both;
+  pointer-events: auto;
+  animation: roshi-say-in 280ms steps(3) both;
 }
-.perch-say::before {
+.roshi-say::after {
   content: '';
   position: absolute;
-  left: -12px;
-  top: 50%;
-  margin-top: -7px;
-  border: 7px solid transparent;
-  border-right: 9px solid var(--ink);
-  border-left: 0;
+  top: 100%;
+  left: calc(var(--x) + var(--w) / 2 - var(--bl) - 11px);
+  border: 8px solid transparent;
+  border-top: 10px solid var(--ink);
+  border-bottom: 0;
 }
-.perch-quiet {
-  background: transparent;
-  border-style: dashed;
-  border-color: var(--washi-dark);
-  box-shadow: none;
-  color: var(--ink-soft);
-  font-style: italic;
-  animation: none;
-}
-.perch-quiet::before {
-  display: none;
-}
-.perch-head {
+.roshi-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1795,71 +1942,90 @@ button {
   gap: 4px 10px;
   font-family: var(--font-display);
   font-size: 10px;
-  font-style: normal;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
-.perch-name {
+.roshi-name {
   opacity: 0.75;
 }
-.perch-kind {
+.roshi-kind {
   padding: 1px 5px;
   color: var(--washi);
   background: var(--ink-soft);
   white-space: nowrap;
 }
-.perch-meta {
+.roshi-meta {
   font-family: var(--font-num);
   font-size: 15px;
   opacity: 0.6;
 }
-.sensei-blunder .perch-kind { background: var(--vermilion-dark); }
-.sensei-mistake .perch-kind { background: var(--vermilion); }
-.sensei-good .perch-kind { background: var(--moss); }
-.sensei-brilliant .perch-kind { background: var(--gold); color: var(--ink); }
-.sensei-brilliant .perch-say,
-.sensei-victory .perch-say { box-shadow: 0 0 0 3px var(--gold), 3px 3px 0 3px rgba(10, 6, 16, 0.35); }
-.sensei-by-stockfish .perch-say { background: var(--washi); }
+.sensei-blunder .roshi-kind { background: var(--vermilion-dark); }
+.sensei-mistake .roshi-kind { background: var(--vermilion); }
+.sensei-good .roshi-kind { background: var(--moss); }
+.sensei-brilliant .roshi-kind { background: var(--gold); color: var(--ink); }
+.sensei-brilliant .roshi-say,
+.sensei-victory .roshi-say { box-shadow: 0 0 0 3px var(--gold), 3px 3px 0 3px rgba(10, 6, 16, 0.35); }
+.sensei-by-stockfish .roshi-say { background: var(--washi); }
 /* He reacts: hops for brilliance and victory, shakes at blunders, nods at the rest. */
-.sensei-brilliant .perch-figure,
-.sensei-victory .perch-figure { animation: perch-hop 420ms steps(2) 3; }
-.sensei-blunder .perch-figure,
-.sensei-defeat .perch-figure { animation: perch-shake 360ms steps(3) 3; }
-.sensei-mistake .perch-figure,
-.sensei-good .perch-figure,
-.sensei-intro .perch-figure,
-.sensei-draw .perch-figure { animation: perch-nod 600ms steps(2) 2; }
-
-@keyframes perch-waves {
-  50% { background-position: 8px 3px, -6px 11px, 0 0; }
+.sensei-brilliant .roshi-figure,
+.sensei-victory .roshi-figure { animation: roshi-hop 420ms steps(2) 3; }
+.sensei-blunder .roshi-figure,
+.sensei-defeat .roshi-figure { animation: roshi-shake 360ms steps(3) 3; }
+.sensei-mistake .roshi-figure,
+.sensei-good .roshi-figure,
+.sensei-intro .roshi-figure,
+.sensei-draw .roshi-figure { animation: roshi-nod 600ms steps(2) 2; }
+/* Keep the footer readable above him. */
+body.has-roshi .app {
+  padding-bottom: calc(32px + 150px);
 }
-@keyframes perch-breathe {
+
+@keyframes roshi-step-a {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes roshi-step-b {
+  0%, 49% { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+@keyframes roshi-bob {
+  50% { transform: translateY(calc(var(--w) / -30)); }
+}
+@keyframes roshi-breathe {
   50% { transform: translateY(1px); }
 }
-@keyframes perch-zzz {
+@keyframes roshi-startle {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes roshi-unstartle {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes roshi-zzz {
   0% { opacity: 0; transform: translate(0, 6px); }
   50% { opacity: 1; }
   100% { opacity: 0; transform: translate(6px, -6px); }
 }
-@keyframes perch-say-in {
-  from { opacity: 0; transform: translateX(-10px) scale(0.9); }
+@keyframes roshi-say-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.9); }
 }
-@keyframes perch-hop {
+@keyframes roshi-hop {
   50% { transform: translateY(-10px); }
 }
-@keyframes perch-shake {
+@keyframes roshi-shake {
   33% { transform: translateX(-4px); }
   66% { transform: translateX(4px); }
 }
-@keyframes perch-bleed {
+@keyframes roshi-bleed {
   from { clip-path: inset(0 0 74% 0); }
   to { clip-path: inset(0 0 55% 0); }
 }
-@keyframes perch-drop {
+@keyframes roshi-drop {
   0% { opacity: 1; transform: translate(0, 0); }
   100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
 }
-@keyframes perch-nod {
+@keyframes roshi-nod {
   50% { transform: translateY(3px); }
 }
 
@@ -1873,18 +2039,20 @@ button {
 .glyph-brilliant { color: #b07d10; }
 
 @media (max-width: 560px) {
-  .sensei-perch { min-height: 132px; }
-  .perch-scene { width: 80px; }
-  .perch-figure { width: 60px; height: 92px; margin-left: -30px; }
-  .perch-say { font-size: 13px; }
+  .roshi { --w: 60px; --h: 92px; }
+  .roshi-say { font-size: 13px; }
+  body.has-roshi .app { padding-bottom: calc(24px + 104px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .perch-sea,
-  .perch-zzz,
-  .perch-say,
-  .perch-figure,
-  .perch-bleed,
-  .perch-drop {
+  .roshi-walker {
+    transition: none;
+  }
+  .roshi-f,
+  .roshi-figure,
+  .roshi-say,
+  .roshi-bleed,
+  .roshi-drop,
+  .roshi-zzz {
     animation: none !important;
   }
 }
@@ -2565,5 +2733,339 @@ a.stat-best:focus-visible em {
   .stat-now,
   .stat-record {
     width: 100%;
+  }
+}
+
+/* ---------- Full-screen campaign map (#/map) + province drawer (#/map/<elo>) ---------- */
+.japan-open {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 1180px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+.japan-open .castle {
+  pointer-events: none;
+}
+.japan-open-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--washi);
+  background: var(--ink);
+  box-shadow: 3px 3px 0 rgba(26, 18, 32, 0.4);
+  transition: transform 120ms steps(2);
+}
+.japan-open:hover .japan-open-hint {
+  transform: translate(-2px, -2px);
+  background: var(--vermilion);
+}
+.japan-open:hover .japan {
+  box-shadow: 0 0 0 3px var(--gold), 3px 3px 0 rgba(26, 18, 32, 0.4);
+}
+
+html:has(dialog.warmap[open]) {
+  overflow: hidden;
+}
+.warmap {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--washi);
+  background:
+    radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(0, 0, 0, 0.55) 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 6px),
+    #221a2c;
+}
+.warmap[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.warmap::backdrop {
+  background: #221a2c;
+}
+.warmap-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 18px;
+  border-bottom: 4px solid var(--ink);
+  background: var(--ink-soft);
+  box-shadow: inset 0 -3px 0 var(--vermilion-dark);
+}
+.warmap-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 18px;
+}
+.warmap-kanji {
+  font-size: 24px;
+  color: var(--gold);
+}
+.warmap-summary {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+.warmap-summary b {
+  color: var(--gold);
+}
+.warmap-bar kbd {
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.6;
+}
+.warmap-stage {
+  container-type: size;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  min-height: 0;
+}
+.warmap-stage .japan {
+  width: min(100cqw, 100cqh * var(--ar));
+  max-width: none;
+  border: 6px solid var(--ink);
+  box-shadow: 0 0 0 3px var(--gold), 0 0 0 9px var(--ink), 10px 10px 0 9px rgba(0, 0, 0, 0.45);
+  animation: warmap-unroll 700ms steps(12) both;
+}
+@keyframes warmap-unroll {
+  from { clip-path: inset(0 50% 0 50%); transform: scale(0.92); }
+  to { clip-path: inset(0 0 0 0); transform: scale(1); }
+}
+.warmap-stage .castle {
+  animation: castle-drop 300ms steps(4) both;
+  animation-delay: 700ms;
+}
+@keyframes castle-drop {
+  from { opacity: 0; transform: translateY(-14px); }
+}
+.warmap-hint {
+  margin: 0;
+  padding: 0 18px 12px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.warmap .castle:hover .province-flag,
+.warmap .castle:focus-visible .province-flag {
+  transform: translate(-2px, -2px);
+  box-shadow: 0 0 0 3px var(--gold), 5px 5px 0 rgba(26, 18, 32, 0.5);
+}
+.warmap .castle:hover .castle-label {
+  background: var(--ink-soft);
+}
+.warmap .castle-selected .province-flag {
+  box-shadow: 0 0 0 4px var(--vermilion), 3px 3px 0 rgba(26, 18, 32, 0.5);
+}
+.warmap .castle-selected .castle-label {
+  background: var(--vermilion-dark);
+}
+.warmap .castle-selected .province-elo {
+  color: #fff8e6;
+}
+@media (min-width: 641px) {
+  .warmap .castle .province-flag { left: -28px; top: -28px; width: 56px; height: 56px; }
+  .warmap .castle .province-flag img { width: 44px; height: 44px; }
+  .warmap .castle .fog { font-size: 26px; }
+  .warmap .castle-label-t .castle-label { bottom: 32px; }
+  .warmap .castle-label-b .castle-label { top: 32px; }
+  .warmap .castle-label-r .castle-label { left: 32px; }
+  .warmap .castle .province-elo { font-size: 24px; }
+  .warmap .castle-name { font-size: 14px; }
+}
+@media (max-width: 640px) {
+  .warmap-summary { display: none; }
+  .warmap-stage { padding: 8px; }
+}
+
+.province-drawer {
+  position: fixed;
+  z-index: 10;
+  inset: 0 0 0 auto;
+  width: min(480px, 100vw);
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--ink);
+  background: var(--washi);
+  border: 0;
+  border-left: 4px solid var(--ink);
+  box-shadow: inset 4px 0 0 #fff8e6, -8px 0 0 rgba(10, 6, 16, 0.35);
+}
+.province-drawer[open] {
+  animation: drawer-in 260ms steps(6) both;
+}
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+}
+.pd {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 18px 28px;
+}
+.pd-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pd-head .pd-flag {
+  flex: none;
+}
+.pd-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pd-kanji {
+  font-size: 34px;
+  line-height: 1;
+  color: var(--vermilion-dark);
+}
+.pd-name {
+  font-family: 'DotGothic16', monospace;
+  font-size: 17px;
+}
+.pd-elo {
+  font-family: var(--font-num);
+  font-size: 22px;
+  line-height: 1;
+}
+.pd-close {
+  align-self: flex-start;
+}
+.pd-status {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 2px solid var(--ink);
+  background: var(--washi-dark);
+}
+.pd-status.province-conquered { background: #cfe3b8; }
+.pd-status.province-contested,
+.pd-status.province-next { background: #f6c9a8; }
+.pd-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pd-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: #fbf3de;
+  border: 2px solid var(--ink);
+}
+.pd-stat span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.pd-stat b {
+  font-family: var(--font-num);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: normal;
+}
+.pd-note,
+.pd-empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.pd-empty {
+  padding: 14px;
+  border: 2px dashed var(--ink-soft);
+  opacity: 0.8;
+}
+.pd-section {
+  margin: 4px 0 0;
+  padding-bottom: 6px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 15px;
+  font-weight: normal;
+  color: var(--vermilion-dark);
+  border-bottom: 2px dashed var(--washi-dark);
+}
+.pd-games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pd-game {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+  padding: 12px;
+  background: #fbf3de;
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.pd-game .battle-kanji {
+  width: 44px;
+  height: 44px;
+  font-size: 26px;
+}
+.pd-game.outcome-us .battle-kanji { background: var(--vermilion); color: var(--washi); }
+.pd-game.outcome-stockfish .battle-kanji { background: var(--ink-soft); color: var(--washi); }
+.pd-game-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink);
+}
+.pd-game-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pd-game-head span {
+  font-size: 13px;
+}
+.pd-game.outcome-us .pd-game-head span { color: #2f6b2a; }
+.pd-game.outcome-stockfish .pd-game-head span { color: var(--vermilion-dark); }
+.pd-game-date {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.pd-replay {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+@media (prefers-reduced-motion: reduce) {
+  .warmap-stage .japan,
+  .warmap-stage .castle,
+  .province-drawer[open] {
+    animation: none;
+  }
+}
+@media (min-width: 1100px) {
+  /* Make room for the open province drawer instead of covering the north. */
+  .warmap:has(.province-drawer[open]) .warmap-stage {
+    padding-right: 500px;
   }
 }

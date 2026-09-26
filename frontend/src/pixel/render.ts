@@ -1,4 +1,4 @@
-import { HERMIT, HERMIT_NOSEBLEED, HERMIT_PALETTE } from './hermit'
+import { HERMIT, HERMIT_FRAMES, HERMIT_NOSEBLEED, HERMIT_PALETTE, type HermitFrame } from './hermit'
 import { SPRITES, SPRITE_SIZE, colorFor, type Army, type PieceType } from './sprites'
 
 const cache = new Map<string, string>()
@@ -49,10 +49,16 @@ export function hermitNosebleedUrl(): string {
 }
 
 export function hermitUrl(): string {
-  let url = cache.get('hermit')
+  return hermitFrameUrl('stand')
+}
+
+/** One pose of the pacing hermit (components/Sensei.tsx); all frames share the standing sprite's size. */
+export function hermitFrameUrl(frame: HermitFrame): string {
+  const key = `hermit-${frame}`
+  let url = cache.get(key)
   if (!url) {
-    url = gridToUrl(HERMIT, (k) => HERMIT_PALETTE[k] ?? null)
-    cache.set('hermit', url)
+    url = gridToUrl(HERMIT_FRAMES[frame], (k) => HERMIT_PALETTE[k] ?? null)
+    cache.set(key, url)
   }
   return url
 }

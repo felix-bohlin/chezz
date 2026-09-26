@@ -43,6 +43,8 @@ export interface ManifestEntry {
   termination: string
   plies: number
   engineVersion: string
+  /** Our slowest move in the game, wall clock. */
+  ourMaxMoveMs?: number
 }
 
 export interface Manifest {

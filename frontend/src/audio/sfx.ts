@@ -91,3 +91,38 @@ export function playSituation(situation: Situation): void {
   const cue = CUES[situation];
   if (g && cue) cue(g, g.ctx.currentTime + 0.02);
 }
+
+/** Koto glissando — the "driiing" of the campaign map unrolling. Sweeps up the in scale, then rings. */
+export function playMapOpen(): void {
+  const g = getGraph();
+  if (!g) return;
+  const t = g.ctx.currentTime + 0.02;
+  const sweep = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+  // Each string is plucked a little sooner than the last, like a hand dragged across the bridge.
+  let at = t;
+  sweep.forEach((d, i) => {
+    koto(g, g.sfx, scaleHz(d), at, 0.18 + i * 0.02);
+    at += 0.045 * Math.pow(0.93, i);
+  });
+  koto(g, g.sfx, scaleHz(15), at + 0.04, 0.55);
+  koto(g, g.sfx, scaleHz(10), at + 0.04, 0.35);
+  gong(g, g.sfx, t, 0.18, 70, 5);
+}
+
+/** Two plucked strings as a province scroll is opened. */
+export function playProvince(): void {
+  const g = getGraph();
+  if (!g) return;
+  const t = g.ctx.currentTime + 0.02;
+  woodClick(g, g.sfx, t, 0.35);
+  koto(g, g.sfx, scaleHz(7), t + 0.03, 0.4);
+  koto(g, g.sfx, scaleHz(10), t + 0.11, 0.35);
+}
+
+/** A short falling phrase as the map is rolled up again. */
+export function playMapClose(): void {
+  const g = getGraph();
+  if (!g) return;
+  const t = g.ctx.currentTime + 0.02;
+  [10, 8, 7].forEach((d, i) => koto(g, g.sfx, scaleHz(d), t + i * 0.07, 0.25));
+}

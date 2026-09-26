@@ -11,7 +11,7 @@ import { playMove, playSituation } from "./sfx";
 import { getTension, setTension, startMusic, stopMusic, type Tension } from "./music";
 
 export { installUnlock, unlockAudio, getSettings, setSettings, type AudioSettings } from "./engine";
-export { playMove, playSituation } from "./sfx";
+export { playMapClose, playMapOpen, playMove, playProvince, playSituation } from "./sfx";
 export { startMusic, stopMusic, isMusicPlaying, setTension, type Tension } from "./music";
 
 export interface PlyAudio {

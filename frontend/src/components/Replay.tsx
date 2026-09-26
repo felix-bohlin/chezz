@@ -372,7 +372,6 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       </section>
 
       <aside className="replay-side">
-        {senseiOn && sensei.size > 0 && <Sensei speech={senseiComment} />}
         <div className="px-panel battle-info">
           <div className="battle-title">
             Battle #{game.id} <span className="battle-elo">vs Elo {game.stockfishElo}</span>
@@ -460,6 +459,8 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
           </div>
         )}
       </aside>
+      {/* Fixed to the bottom of the viewport; lives here so he only paces on replays. */}
+      {senseiOn && sensei.size > 0 && <Sensei speech={senseiComment} />}
     </div>
   )
 }

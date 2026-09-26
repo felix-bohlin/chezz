@@ -51,6 +51,7 @@ export default function App() {
   const isLive = hash.startsWith('#/live')
   const isAbout = hash.startsWith('#/about')
   const keynote = hash.match(/^#\/keynote(?:\/(\d+))?/)
+  const mapRoute = hash.match(/^#\/map(?:\/(\d+))?/)
   const entry = gameId ? manifest?.games.find((g) => g.id === gameId) : undefined
   const openGame = (id: string) => (window.location.hash = `#/game/${id}`)
 
@@ -98,7 +99,12 @@ export default function App() {
           ) : (
             <>
               {error && !manifest && <div className="px-panel notice">Could not load games/manifest.json: {error}</div>}
-              {manifest && !gameId && <Dojo manifest={manifest} live={live} onOpen={openGame} />}
+              {manifest && !gameId && <Dojo
+                  manifest={manifest}
+                  live={live}
+                  onOpen={openGame}
+                  map={{ open: !!mapRoute, elo: mapRoute?.[1] ? Number(mapRoute[1]) : undefined }}
+                />}
               {manifest &&
                 gameId &&
                 (entry ? (

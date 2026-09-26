@@ -1,6 +1,7 @@
 // The old turtle hermit who judges the replay (story/sensei.ts, components/Sensei.tsx): bald dome,
 // bushy brows, red-framed shades, a beard to his belly, Hawaiian shirt, orb pendant, turtle shell and a
-// wooden staff. Full body, 30x46; drawn from the user's reference sketch.
+// wooden staff. Full body, 30x46; drawn from the user's reference sketch. HERMIT is the standing pose;
+// the walk, startled and nap frames below share its size and bottom line (HERMIT_FRAMES).
 
 export const HERMIT_PALETTE: Record<string, string> = {
   o: '#1a1220', // outline
@@ -86,3 +87,108 @@ export const HERMIT_NOSEBLEED: [number, number, boolean][] = [
   [13, 18, true], [20, 18, false],
   [13, 19, false],
 ]
+
+/** Copy of `base` with the given rows replaced (row index → 30-char row). */
+function patched(base: string[], rows: Record<number, string>): string[] {
+  const out = [...base]
+  for (const [k, v] of Object.entries(rows)) out[Number(k)] = v
+  return out
+}
+
+// Walk cycle: one foot lifted a row at a time (rows 41-44 are the legs' ends and the sandals).
+export const HERMIT_WALK_A = patched(HERMIT, {
+  41: '.....owxooooooo...osto........',
+  42: '.....owxokkkkkko..ooooooo.....',
+  43: '.....owxooooooo...okkkkkko....',
+  44: '......oo...........oooooo.....',
+})
+export const HERMIT_WALK_B = patched(HERMIT, {
+  41: '.....owxo..osto...ooooooo.....',
+  42: '.....owxooooooo...okkkkkko....',
+  43: '.....owxokkkkkko..oooooo......',
+  44: '......oo.oooooo...............',
+})
+
+// Startled: brows shoot up a row, both feet tuck two rows off the ground. The nose stays put, so
+// HERMIT_NOSEBLEED still lines up while he is speaking.
+export const HERMIT_STARTLED = patched(HERMIT, {
+  7: '...owwwwwoWWWWWWssWWWWWWW.....',
+  8: '...owwwxwoossssssssssssso.....',
+  40: '.....owxooooooo...ooooooo.....',
+  41: '.....owxokkkkkko..okkkkkko....',
+  42: '.....owxooooooo....oooooo.....',
+  43: '......oo......................',
+  44: '..............................',
+})
+
+// Nap: seated cross-legged, back against the shell, head slumped into the beard, staff planted beside him.
+export const HERMIT_NAP: string[] = [
+  '..............................',
+  '..............................',
+  '.....ooo......................',
+  '....owwwo.....................',
+  '....owwwo.....................',
+  '...owwwxwo....................',
+  '...owwwwwo....................',
+  '...owwwwwo....................',
+  '...owwwxwo....................',
+  '...owwwwwo....................',
+  '...owwwwwo....................',
+  '....owwxo.....................',
+  '.....owxo.....ooooo...........',
+  '.....owxo...oosssssoo.........',
+  '.....owxo..oseesssssso........',
+  '.....owxo..osessssssso........',
+  '.....owxo.ossssssssssso.......',
+  '.....owxo.ossssssssssso.oW....',
+  '.....owxo.WWWWWWssWWWWWWW.....',
+  '.....owxoorrrrrrrrrrrrrro.....',
+  '.....owxoorlggggrrlggggrso....',
+  '.....owxosrrrrrrssrrrrrrso....',
+  '.....owxooooooooooooooooo.....',
+  '.....owxoWWWWWWWWWWWWWWWWo....',
+  '.....owxoWWGWWGWWGWWGWWGWoo...',
+  '.....owxooWGWWGWWGWWGWWWoUUo..',
+  '.....owxoooGWWGWWGWWGWWooooUo.',
+  '.....owxOOoWWWGWWGWWGWWoOOOoo.',
+  '.....owxVVPoWWGWWGWWGWoPOVVoo.',
+  '.....owxVOPOoWGWWGWWWoOPOVOoUo',
+  '.....owxOOPOOoWWWGWWoOOPOOoUUo',
+  '.....owxoOPOOOoWWWWoOOOPoooUUo',
+  '.....owxooPVVOOooooOOOVossoUUo',
+  '.....owxooPVOOOoRYoOOOVossouUo',
+  '.....owxooPkOOOoYYoOOOOossouUo',
+  '.....owxooPOOVVOooOkOOOossoUUo',
+  '.....owxooPOOVOOPOOOVVOossoUUo',
+  '.....owxooPOOOOOPOOOVOOossoUUo',
+  '.....owxooPOOOkOPOOOOOOossouUo',
+  '.....owxooPOOOOOPOVVOOkostouo.',
+  '.....owxooPOOOOOPOVOOOOossoUo.',
+  '.....owxoUooooooooooooooooUUo.',
+  '.....owxooHHHHHHhhHHHHHHoUUo..',
+  '.....owxookkkttssssssttkkkoo..',
+  '......oo.oooooooooooooooooo...',
+  '..............................',
+]
+
+export const HERMIT_FRAMES = {
+  stand: HERMIT,
+  walkA: HERMIT_WALK_A,
+  walkB: HERMIT_WALK_B,
+  startled: HERMIT_STARTLED,
+  nap: HERMIT_NAP,
+} as const
+export type HermitFrame = keyof typeof HERMIT_FRAMES
+
+/** Grid sanity check for the preview script: every frame 46 rows of 30 known keys. */
+export function hermitProblems(): string[] {
+  const out: string[] = []
+  for (const [name, grid] of Object.entries(HERMIT_FRAMES)) {
+    if (grid.length !== HERMIT.length) out.push(`${name}: ${grid.length} rows, expected ${HERMIT.length}`)
+    grid.forEach((row, y) => {
+      if (row.length !== HERMIT[0].length) out.push(`${name} row ${y}: ${row.length} chars`)
+      for (const ch of row) if (ch !== '.' && !(ch in HERMIT_PALETTE)) out.push(`${name} row ${y}: unknown key '${ch}'`)
+    })
+  }
+  return out
+}
