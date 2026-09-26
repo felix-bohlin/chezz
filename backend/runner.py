@@ -71,9 +71,26 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         while not board.is_game_over(claim_draw=True):
             is_us = board.turn == our_color
             player = ours if is_us else sf
+            live["turnStartedAt"] = time.time()
+            write_live(live)
             t0 = time.perf_counter()
             try:
                 res = player.play(board, chess.engine.Limit(time=MOVE_TIME), info=chess.engine.INFO_ALL)
+            except TimeoutError:
+                if is_us:
+                    termination = "engine-timeout"
+                    print("our engine did not answer in time", file=sys.stderr, flush=True)
+                    break
+                # A stalled Stockfish (seen once as a transient system hiccup) gets a fresh process and a
+                # fresh 5 s search for the same position rather than killing the whole game.
+                print(f"stockfish timed out at ply {len(moves) + 1}; restarting it", file=sys.stderr, flush=True)
+                try:
+                    sf.quit()
+                except Exception:
+                    pass
+                sf = chess.engine.SimpleEngine.popen_uci(str(STOCKFISH))
+                sf.configure({"UCI_LimitStrength": True, "UCI_Elo": elo})
+                continue
             except (chess.engine.EngineError, chess.engine.EngineTerminatedError) as exc:
                 termination = "engine-error" if is_us else "stockfish-error"
                 print(f"engine failure ({'us' if is_us else 'stockfish'}): {exc}", file=sys.stderr)
@@ -110,7 +127,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         ours.quit()
         sf.quit()
 
-    if termination == "engine-error":
+    if termination in ("engine-error", "engine-timeout"):
         result = "0-1" if our_color == chess.WHITE else "1-0"
     elif termination == "stockfish-error":
         result = "1-0" if our_color == chess.WHITE else "0-1"

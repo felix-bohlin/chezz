@@ -21,6 +21,8 @@ export async function loadAnalysis(file: string): Promise<string> {
 export interface LiveState {
   active: boolean
   updatedAt?: number
+  /** Epoch seconds when the side to move was asked for its move (set by the runner). */
+  turnStartedAt?: number
   lastGameId?: string
   id: string
   date: string

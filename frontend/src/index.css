@@ -874,6 +874,9 @@ button {
 .timer-over .timer-value {
   color: #ff8a70;
 }
+.timer-syncing .timer-value {
+  opacity: 0.6;
+}
 .mv {
   display: flex;
   align-items: baseline;

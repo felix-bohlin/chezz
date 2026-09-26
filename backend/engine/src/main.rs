@@ -18,7 +18,7 @@ const MOVE_OVERHEAD_MS: u64 = 150;
 const DEFAULT_HASH_MB: usize = 256;
 const DEFAULT_THREADS: usize = 4;
 /// Absolute ceiling on thinking time per move, whatever the GUI sends (competition rule: 5 s).
-const DEFAULT_MAX_THINK_MS: u64 = 4750;
+const DEFAULT_MAX_THINK_MS: u64 = 4700;
 
 fn main() {
     // Deep recursion with per-frame move lists needs more than the default Windows 1MB stack.

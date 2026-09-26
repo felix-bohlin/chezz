@@ -20,14 +20,18 @@ export function MoveTimer({ ms, since = null, limitMs }: Props) {
   }, [since])
 
   const running = since !== null
-  const value = running ? Math.max(0, now - since * 1000) : ms
+  const elapsed = running ? Math.max(0, now - since * 1000) : ms
+  // While running, the move may already be played but not yet polled: stop at the limit and show
+  // "syncing" rather than counting on. The recorded time of each move is the authoritative number.
+  const syncing = running && elapsed !== null && elapsed > limitMs
+  const value = syncing ? limitMs : elapsed
   const frac = value === null ? 0 : Math.min(1, value / limitMs)
-  const over = value !== null && value > limitMs + OVER_TOLERANCE_MS
+  const over = !running && value !== null && value > limitMs + OVER_TOLERANCE_MS
 
   return (
     <div
-      className={`timer${running ? ' timer-running' : ''}${over ? ' timer-over' : ''}`}
-      title={running ? 'Thinking…' : 'Think time of the last move (limit 5 s)'}
+      className={`timer${running ? ' timer-running' : ''}${over ? ' timer-over' : ''}${syncing ? ' timer-syncing' : ''}`}
+      title={running ? 'Thinking…' : 'Recorded think time of the last move (limit 5 s)'}
     >
       <span className="timer-icon" aria-hidden="true">
         ⧗
@@ -35,7 +39,9 @@ export function MoveTimer({ ms, since = null, limitMs }: Props) {
       <span className="timer-bar">
         <span className="timer-fill" style={{ width: `${frac * 100}%` }} />
       </span>
-      <span className="timer-value">{value === null ? '—' : `${(value / 1000).toFixed(1)}s`}</span>
+      <span className="timer-value">
+        {value === null ? '—' : syncing ? 'sync…' : `${(value / 1000).toFixed(1)}s`}
+      </span>
     </div>
   )
 }

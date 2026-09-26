@@ -3,7 +3,9 @@ import { loadLive, type LiveState } from '../lib/data'
 import type { GameRecord } from '../types/game'
 import { ReplayView } from './Replay'
 
-const POLL_MS = 2000
+// Fast polling keeps the live think-timer honest: a slow poll keeps it ticking after a move has
+// already been played, which looked like >5 s moves.
+const POLL_MS = 400
 
 export function useLive(pollMs = POLL_MS): LiveState | null {
   const [live, setLive] = useState<LiveState | null>(null)
@@ -52,5 +54,13 @@ export function Live() {
     moves: live.moves,
     pgn: '',
   }
-  return <ReplayView key={live.id} game={game} initialPly={live.moves.length} live liveSince={live.updatedAt ?? null} />
+  return (
+    <ReplayView
+      key={live.id}
+      game={game}
+      initialPly={live.moves.length}
+      live
+      liveSince={live.turnStartedAt ?? live.updatedAt ?? null}
+    />
+  )
 }

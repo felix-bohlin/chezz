@@ -52,7 +52,7 @@ def verify(g: dict) -> tuple[list[str], list[str]]:
 
     term = g["termination"]
     outcome = board.outcome(claim_draw=True)
-    if term in ("engine-error", "stockfish-error"):
+    if term in ("engine-error", "engine-timeout", "stockfish-error"):
         warnings.append(f"ended by {term}")
     elif outcome is None:
         errors.append(f"game recorded as {g['result']} ({term}) but the final position is not over")

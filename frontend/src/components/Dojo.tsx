@@ -18,12 +18,6 @@ type Status = 'conquered' | 'contested' | 'next' | 'locked'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
-
 export function Dojo({ manifest, live, onOpen }: Props) {
   const games = manifest.games
   const wins = games.filter((g) => g.winner === 'us').length
@@ -131,9 +125,7 @@ export function Dojo({ manifest, live, onOpen }: Props) {
                       {RESULT[g.winner].label} {g.result}
                     </span>
                   </span>
-                  <span className="battle-card-sub">
-                    Battle #{g.id} · {formatDate(g.date)}
-                  </span>
+                  <span className="battle-card-sub">Battle #{g.id}</span>
                   <span className="battle-card-chips">
                     <span className="chip">
                       <i className={`chip-swatch chip-${g.ourColor}`} /> {cap(g.ourColor)}
