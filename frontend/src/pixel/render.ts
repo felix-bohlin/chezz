@@ -58,9 +58,11 @@ export function hermitUrl(): string {
 }
 
 // Board tiles: raked sand (light) and moss stone (dark), 20x20 like the sprites.
+// Texture kept faint (ripples/specks close to the base colour) so the pieces are the busiest thing
+// on the board; the sand is a shade deeper so ivory pieces don't vanish into it.
 const TILE_COLORS: Record<string, string> = {
-  '1': '#eadcbc', '2': '#d9c6a0', '3': '#f5ead0',
-  '4': '#6f8a64', '5': '#5c7654', '6': '#86a279', '7': '#4d6547',
+  '1': '#dccaa0', '2': '#d3c095', '3': '#e3d2ab',
+  '4': '#6f8a64', '5': '#68825d', '6': '#779170', '7': '#637c59',
 }
 
 function tileRows(light: boolean): string[] {
