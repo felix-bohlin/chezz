@@ -1879,7 +1879,8 @@ button.castle,
 }
 
 /* ---------- Hermit sensei pacing the bottom of the screen (components/Sensei.tsx) ---------- */
-/* --x: his left edge in viewport px, --vw: layout width, --dur: walk duration, --face: 1 | -1 (set inline). */
+/* --x: his left edge in viewport px, --y: height above the floor, --vw: layout width, --dur: walk or fall
+   duration, --face: 1 | -1, --tilt: swing while dangling (all set inline). */
 .roshi {
   position: fixed;
   left: 0;
@@ -1900,8 +1901,11 @@ button.castle,
   bottom: 6px;
   width: var(--w);
   height: var(--h);
-  transform: translateX(var(--x));
-  transition: transform var(--dur) linear;
+  transform: translate(var(--x), calc(var(--y, 0px) * -1));
+  transition: transform var(--dur) var(--ease, linear);
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
 }
 /* Facing is flipped on its own element so a turn never squeezes the walk transition through scaleX(0). */
 .roshi-face {
@@ -2038,6 +2042,144 @@ button.castle,
 .sensei-good .roshi-figure,
 .sensei-intro .roshi-figure,
 .sensei-draw .roshi-figure { animation: roshi-nod 600ms steps(2) 2; }
+
+/* Poked: startled frame and a jump. Held: legs kicking, swinging from the collar. Dropped: gravity, a squash,
+   then he looks around under circling stars. */
+.roshi.roshi-jolt .roshi-f-startled,
+.roshi.roshi-fall .roshi-f-startled,
+.roshi.roshi-dazed .roshi-f-stand {
+  opacity: 1;
+}
+.roshi.roshi-jolt .roshi-figure { animation: roshi-jolt 650ms steps(3) both; }
+/* In the air he passes in front of the board and the end card (below the intro overlay). */
+.roshi.roshi-dangle,
+.roshi.roshi-fall { z-index: 50; }
+.roshi.roshi-dangle .roshi-walker { cursor: grabbing; }
+.roshi.roshi-dangle .roshi-f-walkA { animation: roshi-step-a 140ms steps(1) infinite; }
+.roshi.roshi-dangle .roshi-f-walkB { animation: roshi-step-b 140ms steps(1) infinite; }
+.roshi.roshi-dangle .roshi-figure {
+  animation: none;
+  transform-origin: 50% 4%;
+  transform: rotate(var(--tilt));
+  transition: transform 450ms cubic-bezier(0.25, 1.9, 0.5, 1);
+}
+.roshi-fall { --ease: cubic-bezier(0.333, 0, 0.667, 0.333); } /* y = t², free fall */
+.roshi.roshi-fall .roshi-figure { animation: none; }
+.roshi.roshi-dazed .roshi-figure {
+  transform-origin: 50% 100%;
+  animation: roshi-land 320ms steps(3) both;
+}
+.roshi-dazed .roshi-face { animation: roshi-look 1400ms steps(1) 350ms infinite; }
+.roshi-mark {
+  position: absolute;
+  top: -18px;
+  left: calc(50% + var(--face) * 5%);
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--gold);
+  text-shadow: 2px 2px 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink);
+  pointer-events: none;
+  animation: roshi-mark 500ms steps(2) both;
+}
+.roshi-dazed .roshi-mark { animation: roshi-mark 500ms steps(2) both, roshi-nod 900ms steps(2) 500ms infinite; }
+/* Stars circling his dome (sprite columns 10-23, drawn unmirrored inside .roshi-face). */
+.roshi-dizzy {
+  position: absolute;
+  top: 0;
+  left: 33%;
+  width: 44%;
+  height: 12%;
+  pointer-events: none;
+}
+.roshi-dizzy span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  box-shadow: 0 -4px 0 -1px var(--gold), 0 4px 0 -1px var(--gold), -4px 0 0 -1px var(--gold), 4px 0 0 -1px var(--gold);
+  animation: roshi-orbit 900ms steps(8) infinite;
+}
+.roshi-dizzy span:nth-child(2) { animation-delay: -300ms; }
+.roshi-dizzy span:nth-child(3) { animation-delay: -600ms; }
+
+/* Kamehameha on checkmate (BLAST_MS = 3200): the orb charges in his hands for 1.1 s while he shouts it out,
+   the screen flashes and the beam fires across to the edge of the screen, crackles for a while, then thins out. */
+.roshi {
+  --bh: calc(var(--h) * 0.2);
+  --hand: calc(6px + var(--h) * 0.47);
+}
+.roshi.roshi-blast .roshi-f { opacity: 0; animation: none; }
+.roshi.roshi-blast .roshi-f-startled { opacity: 1; }
+.roshi.roshi-blast .roshi-figure { animation: roshi-tremble 100ms steps(2) 11, roshi-recoil 300ms steps(3) 1100ms; }
+.roshi-orb {
+  position: absolute;
+  left: calc(var(--w) * -0.2);
+  top: calc(53% - var(--w) * 0.17);
+  width: calc(var(--w) * 0.34);
+  height: calc(var(--w) * 0.34);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 30%, #a8ecff 31% 55%, #3a8cff 56% 70%, transparent 71%);
+  filter: drop-shadow(0 0 6px #6fd3ff);
+  animation: roshi-orb 3200ms steps(24) both;
+}
+.roshi-kame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.roshi-beam {
+  position: absolute;
+  bottom: calc(var(--hand) - var(--bh) / 2);
+  height: var(--bh);
+  animation: roshi-beam 2000ms steps(24) 1100ms both;
+}
+.roshi-kame-right .roshi-beam { left: calc(var(--x) + var(--w) * 0.98); right: 0; transform-origin: left center; }
+.roshi-kame-left .roshi-beam { left: 0; width: calc(var(--x) + var(--w) * 0.02); transform-origin: right center; }
+.roshi-beam-core {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    #2a6cff 0 14%,
+    #6fd3ff 14% 32%,
+    #fff 32% 68%,
+    #6fd3ff 68% 86%,
+    #2a6cff 86%
+  );
+  box-shadow: 0 0 10px 2px #6fd3ff, 0 0 28px 6px rgba(58, 140, 255, 0.6);
+  animation: roshi-crackle 90ms steps(1) infinite;
+}
+.roshi-shout {
+  position: absolute;
+  bottom: calc(var(--hand) + var(--bh) / 2 + 8px);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-size: 16px;
+  white-space: nowrap;
+  color: var(--washi);
+  text-shadow: 2px 2px 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink);
+  animation: roshi-shout-out 400ms 2700ms forwards;
+}
+.roshi-kame-right .roshi-shout { left: calc(var(--x) + var(--w) + 4px); }
+.roshi-kame-left .roshi-shout { right: calc(var(--vw) - var(--x) + 4px); }
+.roshi-shout span {
+  opacity: 0;
+  animation: roshi-syllable 400ms steps(2) calc(var(--i) * 240ms) both;
+}
+.roshi-shout span:last-child { font-size: 1.6em; color: #a8ecff; }
+.roshi-flash {
+  position: fixed;
+  inset: 0;
+  background: #e6f8ff;
+  opacity: 0;
+  animation: roshi-flash 450ms steps(3) 1100ms;
+}
+
 /* Keep the footer readable above him. */
 body.has-roshi .app {
   padding-bottom: calc(32px + 150px);
@@ -2091,6 +2233,65 @@ body.has-roshi .app {
 @keyframes roshi-nod {
   50% { transform: translateY(3px); }
 }
+@keyframes roshi-jolt {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-22px); }
+  60% { transform: translateY(0); }
+  75% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+@keyframes roshi-land {
+  0% { transform: scale(1.18, 0.78); }
+  60% { transform: scale(0.94, 1.06); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes roshi-look {
+  0%, 45% { transform: scaleX(var(--face)); }
+  50%, 95% { transform: scaleX(calc(var(--face) * -1)); }
+}
+@keyframes roshi-mark {
+  from { opacity: 0; transform: translate(-50%, 8px) scale(0.6); }
+}
+@keyframes roshi-orbit {
+  0% { transform: translate(0, 4px) scale(0.7); }
+  25% { transform: translate(calc(var(--w) * 0.22), 9px) scale(1); }
+  50% { transform: translate(calc(var(--w) * 0.44), 4px) scale(0.7); }
+  75% { transform: translate(calc(var(--w) * 0.22), 0) scale(0.45); }
+  100% { transform: translate(0, 4px) scale(0.7); }
+}
+@keyframes roshi-tremble {
+  50% { transform: translateX(2px); }
+}
+@keyframes roshi-recoil {
+  40% { transform: translateX(calc(var(--face) * 6px)); }
+}
+@keyframes roshi-orb {
+  0% { transform: scale(0.1); opacity: 0.6; }
+  30% { transform: scale(0.9); opacity: 1; }
+  35% { transform: scale(1.35); }
+  80% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+@keyframes roshi-beam {
+  0% { transform: scaleX(0); opacity: 1; }
+  10% { transform: scaleX(1); }
+  75% { transform: scale(1, 1); opacity: 1; }
+  100% { transform: scale(1, 0.1); opacity: 0; }
+}
+@keyframes roshi-crackle {
+  50% { transform: scaleY(0.82); }
+}
+@keyframes roshi-syllable {
+  from { opacity: 0; transform: scale(1.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes roshi-shout-out {
+  to { opacity: 0; }
+}
+@keyframes roshi-flash {
+  0% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
 
 .mv-glyph {
   margin-right: auto;
@@ -2115,8 +2316,14 @@ body.has-roshi .app {
   .roshi-say,
   .roshi-bleed,
   .roshi-drop,
-  .roshi-zzz {
+  .roshi-zzz,
+  .roshi-face,
+  .roshi-mark,
+  .roshi-dizzy span {
     animation: none !important;
+  }
+  .roshi.roshi-dangle .roshi-figure {
+    transition: none;
   }
 }
 
