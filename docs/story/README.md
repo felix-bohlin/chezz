@@ -44,7 +44,7 @@ pickSpeaker → pickLine(lines.json)                03-dialogue-system.md
 
 The frontend in `frontend/` is a **2D pixel-art canvas** (`src/pixel/`), not a 3D scene. For now:
 - In [04-animation-reactions.md](04-animation-reactions.md), the **2D column applies**. The 3D descriptions set the mood and target for later polish.
-- The existing sprites already match most of the cast: ashigaru, ninja, sōhei monk, samurai general, shōgun. The **rook** is a castle keep (tenshu); the `rider` role in [02-cast.md](02-cast.md) is a proposal to replace it.
+- The existing sprites already match most of the cast: ashigaru, ninja, sōhei monk, samurai general, shōgun. The **rook** is a castle keep (tenshu), voiced by its `garrison`. The **knights** are ninja on horseback.
 - Music and sound: [05-music-sound.md](05-music-sound.md) and `frontend/src/audio/`.
 
 ## Ownership
