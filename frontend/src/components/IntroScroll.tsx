@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { playSituation, setTension, startMusic, stopMusic } from '../audio'
+import { murmur, playSituation, setTension, startMusic, stopMusic } from '../audio'
 import { paintPanel } from '../pixel/intro'
-import { hermitUrl } from '../pixel/render'
+import { hermitNosebleedUrl, hermitUrl } from '../pixel/render'
 import { HISTORY_NOTE, INTRO_PANELS, markIntroSeen, type IntroPanel } from '../story/intro'
 import { SENSEI_NAME } from '../story/sensei'
 
 /** Time on each panel: enough to read the narration slowly, never under 9 s. */
 const panelMs = (p: IntroPanel) => Math.max(9000, 5000 + 75 * p.narration.length)
 
-function Panel({ panel }: { panel: IntroPanel }) {
+function Panel({ panel, active, speaking }: { panel: IntroPanel; active: boolean; speaking: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (canvas.current) paintPanel(canvas.current, panel.art)
@@ -20,7 +20,19 @@ function Panel({ panel }: { panel: IntroPanel }) {
         <div className="intro-caption">{panel.caption}</div>
         {/* Master Roshi tells the story: his sprite beside a speech bubble holding the narration. */}
         <div className="intro-narrator">
-          <img className="intro-roshi" src={hermitUrl()} alt={SENSEI_NAME} draggable={false} />
+          <div className={`intro-roshi${speaking ? ' speaking' : ''}`}>
+            <img src={hermitUrl()} alt={SENSEI_NAME} draggable={false} />
+            {/* Mounted only while the panel is on screen, so the spurt plays when you arrive, not off-stage. */}
+            {panel.bleed && active && (
+              <>
+                <img className="roshi-bleed" src={hermitNosebleedUrl()} alt="" draggable={false} />
+                <span className="roshi-drop d1" />
+                <span className="roshi-drop d2" />
+                <span className="roshi-drop d3" />
+                <span className="roshi-drop d4" />
+              </>
+            )}
+          </div>
           <blockquote className="intro-bubble">
             <span className="intro-bubble-who">{SENSEI_NAME}</span>
             <p className="intro-narration">{panel.narration}</p>
@@ -50,13 +62,29 @@ export function IntroScroll({ onClose }: { onClose: () => void }) {
     return () => stopMusic()
   }, [])
 
+  // Roshi murmurs each panel's line; changing panel or closing cuts him off.
+  const [speaking, setSpeaking] = useState(false)
+  const lineMs = useRef<number | null>(null)
+  useEffect(() => {
+    const voice = murmur(INTRO_PANELS[index].narration)
+    lineMs.current = voice ? voice.duration * 1000 : null
+    setSpeaking(!!voice)
+    const t = voice ? setTimeout(() => setSpeaking(false), voice.duration * 1000) : undefined
+    return () => {
+      voice?.stop()
+      clearTimeout(t)
+    }
+  }, [index])
+
+  // Move on a beat after he stops talking (or on the reading timer when audio is locked).
   useEffect(() => {
     if (index === last) {
       playSituation('game_start')
       return
     }
     if (showHistory) return
-    const t = setTimeout(() => setIndex((i) => i + 1), panelMs(INTRO_PANELS[index]))
+    const ms = lineMs.current !== null ? lineMs.current + 2500 : panelMs(INTRO_PANELS[index])
+    const t = setTimeout(() => setIndex((i) => i + 1), ms)
     return () => clearTimeout(t)
   }, [index, last, showHistory])
 
@@ -89,7 +117,7 @@ export function IntroScroll({ onClose }: { onClose: () => void }) {
             <div className="intro-strip" style={{ transform: `translateX(${-index * 100}%)` }}>
               {INTRO_PANELS.map((p, i) => (
                 <div key={p.art} className="intro-slot" aria-hidden={i !== index}>
-                  <Panel panel={p} />
+                  <Panel panel={p} active={i === index} speaking={i === index && speaking} />
                 </div>
               ))}
             </div>

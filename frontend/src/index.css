@@ -180,7 +180,6 @@ button {
 .mv:focus-visible,
 .castle:focus-visible,
 .japan-open:focus-visible,
-.march-row:focus-visible,
 .battle-card:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;
@@ -662,7 +661,7 @@ button {
   --wood-dark: #3b2215;
   position: relative;
   margin-top: 8px;
-  padding: 18px 20px 20px;
+  padding: 20px;
   border: var(--px) solid var(--ink);
   background: #85562f
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='48' shape-rendering='crispEdges'%3E%3Crect width='96' height='24' fill='%238b5a33'/%3E%3Crect y='24' width='96' height='24' fill='%237c4e2c'/%3E%3Cg fill='%23a87145'%3E%3Crect width='96' height='1'/%3E%3Crect x='63' width='1' height='23'/%3E%3Crect x='14' y='3' width='10' height='1'/%3E%3Crect x='50' y='13' width='10' height='1'/%3E%3Crect x='78' y='11' width='12' height='1'/%3E%3C/g%3E%3Cg fill='%239b663d'%3E%3Crect y='24' width='96' height='1'/%3E%3Crect x='21' y='24' width='1' height='23'/%3E%3Crect x='30' y='27' width='12' height='1'/%3E%3Crect x='4' y='37' width='14' height='1'/%3E%3Crect x='76' y='44' width='14' height='1'/%3E%3C/g%3E%3Cg fill='%236f4527'%3E%3Crect x='4' y='6' width='22' height='1'/%3E%3Crect x='30' y='10' width='18' height='1'/%3E%3Crect x='70' y='5' width='20' height='1'/%3E%3Crect x='8' y='15' width='30' height='1'/%3E%3Crect x='66' y='17' width='24' height='1'/%3E%3Crect x='42' y='19' width='12' height='1'/%3E%3C/g%3E%3Cg fill='%23633d22'%3E%3Crect x='2' y='30' width='16' height='1'/%3E%3Crect x='26' y='34' width='28' height='1'/%3E%3Crect x='64' y='29' width='26' height='1'/%3E%3Crect x='24' y='41' width='20' height='1'/%3E%3Crect x='50' y='43' width='18' height='1'/%3E%3Crect x='70' y='38' width='20' height='1'/%3E%3Crect x='85' y='7' width='3' height='2'/%3E%3Crect x='9' y='33' width='3' height='2'/%3E%3C/g%3E%3Cg fill='%233b2215'%3E%3Crect y='23' width='96' height='1'/%3E%3Crect y='47' width='96' height='1'/%3E%3Crect x='62' width='1' height='23'/%3E%3Crect x='20' y='24' width='1' height='23'/%3E%3Crect x='60' y='3' width='1' height='1'/%3E%3Crect x='60' y='19' width='1' height='1'/%3E%3Crect x='18' y='27' width='1' height='1'/%3E%3Crect x='18' y='43' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E")
@@ -695,31 +694,9 @@ button {
     linear-gradient(var(--iron), var(--iron)) right bottom / 20px 32px;
   background-repeat: no-repeat;
 }
-.war-table .panel-title {
-  display: inline-block;
-  width: auto;
-  margin: 0 0 14px 18px;
-  padding: 5px 14px;
-  font-size: 15px;
-  font-weight: normal;
-  color: #f6e2b0;
-  text-shadow: 2px 2px 0 var(--ink);
-  background: #4f2f1a;
-  border: 3px solid var(--ink);
-  box-shadow: inset 3px 3px 0 #6e4428, inset -3px -3px 0 #321c10, 3px 3px 0 rgba(10, 6, 16, 0.45);
-}
 .war-table .japan {
   border-color: var(--ink);
   box-shadow: 0 0 0 3px var(--wood-dark), 6px 6px 0 rgba(10, 6, 16, 0.45);
-}
-.war-table .march-row {
-  box-shadow: 3px 3px 0 rgba(10, 6, 16, 0.4);
-}
-.campaign-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 20px;
-  align-items: start;
 }
 .japan {
   position: relative;
@@ -807,55 +784,8 @@ button.castle,
 .province-locked .castle-label .province-elo {
   color: #d8cdb4;
 }
-.march {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.march-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 34px 1fr auto;
-  grid-template-areas: 'kanji name elo' 'kanji state state';
-  column-gap: 8px;
-  align-items: baseline;
-  padding: 5px 8px;
-  text-align: left;
-  color: var(--ink);
-  background: #fbf3de;
-  border: 2px solid var(--ink);
-}
-.march-row:hover {
-  background: #cfe3b8;
-}
-.march-kanji {
-  grid-area: kanji;
-  align-self: center;
-  font-size: 15px;
-  color: var(--vermilion-dark);
-}
-.march-name { grid-area: name; font-size: 13px; }
-.march-elo {
-  grid-area: elo;
-  font-family: var(--font-num);
-  font-size: 20px;
-  line-height: 1;
-}
-.march-state { grid-area: state; font-size: 11px; opacity: 0.75; }
-.march-row.province-conquered { background: #e3edcf; }
-.march-row.province-next,
-.march-row.province-contested { background: #f6c9a8; }
-.march-row.province-locked { opacity: 0.6; }
-@media (max-width: 900px) {
-  .campaign-body { grid-template-columns: 1fr; }
-  .march { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-}
 @media (max-width: 640px) {
-  .war-table { padding: 14px 12px 14px; }
-  .war-table .panel-title { margin-left: 8px; }
+  .war-table { padding: 14px 12px; }
   .castle-label { display: none; }
   .castle .province-flag { left: -12px; top: -12px; width: 24px; height: 24px; border-width: 2px; box-shadow: none; }
   .castle .province-flag img { width: 18px; height: 18px; }
@@ -1086,7 +1016,17 @@ button.castle,
 /* ---------- Live ---------- */
 .topbar-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
+}
+.topbar {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.topbar-actions .px-btn,
+.brand {
+  white-space: nowrap;
 }
 .live-dot {
   display: inline-block;
@@ -1468,11 +1408,28 @@ button.castle,
   margin-top: 8px;
 }
 .intro-roshi {
+  position: relative;
   flex: 0 0 auto;
   width: 60px;
   height: 92px;
-  image-rendering: pixelated;
   animation: kn-bob 1.6s steps(2) infinite;
+}
+/* Bobs faster while he murmurs his line. */
+.intro-roshi.speaking {
+  animation-duration: 0.36s;
+}
+.intro-roshi img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+/* The replay's drops are sized for a 120 px Roshi; shrink them for the narrator. */
+.intro-roshi .roshi-drop {
+  width: 4px;
+  height: 4px;
+  box-shadow: 0 0 0 1px #9a1020;
 }
 .intro-bubble {
   position: relative;
@@ -2070,11 +2027,12 @@ button.castle,
   animation: roshi-land 320ms steps(3) both;
 }
 .roshi-dazed .roshi-face { animation: roshi-look 1400ms steps(1) 350ms infinite; }
+/* "!" when poked, "!!" when held, "?" when dazed: beside his head, clear of the speech bubble. */
 .roshi-mark {
   position: absolute;
-  top: -18px;
-  left: calc(50% + var(--face) * 5%);
-  transform: translateX(-50%);
+  top: 0;
+  left: calc(50% + var(--face) * 40%);
+  translate: -50% 0;
   font-family: var(--font-display);
   font-size: 18px;
   color: var(--gold);
@@ -2250,7 +2208,7 @@ body.has-roshi .app {
   50%, 95% { transform: scaleX(calc(var(--face) * -1)); }
 }
 @keyframes roshi-mark {
-  from { opacity: 0; transform: translate(-50%, 8px) scale(0.6); }
+  from { opacity: 0; transform: translateY(8px) scale(0.6); }
 }
 @keyframes roshi-orbit {
   0% { transform: translate(0, 4px) scale(0.7); }

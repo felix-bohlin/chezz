@@ -1,7 +1,7 @@
 import type { LiveState } from '../lib/data'
 import { japanMap, provincesFor } from '../pixel/japan'
 import type { Manifest } from '../types/game'
-import { openWarMap, STATE, type Castle, type Status } from '../lib/warmap'
+import { openWarMap, type Castle, type Status } from '../lib/warmap'
 import { JapanBoard, WarMap } from './WarMap'
 
 interface Props {
@@ -75,26 +75,11 @@ export function Dojo({ manifest, live, onOpen, map }: Props) {
         </a>
       )}
 
-      <section className="campaign war-table">
-        <h1 className="panel-title">天下統一 Campaign map</h1>
-        <div className="campaign-body">
-          <button className="japan-open" onClick={() => openWarMap()} aria-label="Open the full-screen campaign map">
-            <JapanBoard castles={castles} />
-            <span className="japan-open-hint">⛶ Open the war map</span>
-          </button>
-          <ol className="march">
-            {castles.map((c) => (
-              <li key={c.elo}>
-                <button className={`march-row province-${c.status}`} onClick={() => openWarMap(c.elo)} title={c.tip}>
-                  <span className="march-kanji">{c.province.kanji}</span>
-                  <span className="march-name">{c.province.name}</span>
-                  <span className="march-elo">{c.elo}</span>
-                  <span className="march-state">{STATE[c.status]}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </div>
+      <section className="campaign war-table" aria-label="Campaign map">
+        <button className="japan-open" onClick={() => openWarMap()} aria-label="Open the full-screen campaign map">
+          <JapanBoard castles={castles} />
+          <span className="japan-open-hint">⛶ Open the war map</span>
+        </button>
       </section>
 
       <header className="hero dojo-hero">

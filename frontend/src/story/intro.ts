@@ -7,6 +7,8 @@ export interface IntroPanel {
   art: PanelArt
   caption: string
   narration: string
+  /** Roshi is overwhelmed: nosebleed while he tells this panel. */
+  bleed?: boolean
 }
 
 export const INTRO_PANELS: IntroPanel[] = [
@@ -23,6 +25,7 @@ export const INTRO_PANELS: IntroPanel[] = [
   {
     art: 'betrayal',
     caption: 'The betrayal',
+    bleed: true,
     narration: 'His own general, Akechi Mitsuhide, betrayed him. Now Akechi hunts every one of Nobunaga’s allies. Nasty business.',
   },
   {

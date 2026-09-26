@@ -53,7 +53,7 @@ export const ROUTE = [
   { kanji: '山城', name: 'Yamashiro', at: [135.77, 35.05] as LonLat, label: 't' as Side },
   { kanji: '尾張', name: 'Owari', at: [136.95, 35.2] as LonLat, label: 'b' as Side },
   { kanji: '駿河', name: 'Suruga', at: [138.4, 35.15] as LonLat, label: 'b' as Side },
-  { kanji: '武蔵', name: 'Musashi', at: [139.6, 35.85] as LonLat, label: 'b' as Side },
+  { kanji: '武蔵', name: 'Musashi', at: [139.6, 35.85] as LonLat, label: 't' as Side },
   { kanji: '陸奥', name: 'Mutsu', at: [140.8, 38.3] as LonLat, label: 'r' as Side },
   { kanji: '津軽', name: 'Tsugaru', at: [140.6, 40.6] as LonLat, label: 'r' as Side },
   { kanji: '蝦夷', name: 'Ezo', at: [142.4, 43.4] as LonLat, label: 'b' as Side },

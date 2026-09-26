@@ -33,6 +33,8 @@ interface Pose {
   ms: number
   /** Bumped on every change so a walk→walk with the same fields still reschedules. */
   seq: number
+  /** Dangled too long: nosebleed until he has come to (dazed → stand / speak). */
+  bleeding?: boolean
 }
 
 const SPEED = 60 // px per second
@@ -48,6 +50,7 @@ const DAZED_MS = 2600
 const DRAG_PX = 4
 const GRAVITY = 2600 // px per second², for the drop
 const BLAST_MS = 3200 // charge 1100 ms, beam 2000 ms, fade
+const BLEED_MS = 5000 // dangling this long is too much for the old man
 
 /** Interaction poses: they run their course, then settle into speaking or standing. */
 const HANDLED: ReadonlySet<Mode> = new Set(['jolt', 'dangle', 'fall', 'dazed'])
@@ -79,8 +82,8 @@ function pawns(cp: number): string {
 /**
  * The hermit paces the bottom edge of the screen, dozes off now and then, and jumps up with a speech
  * bubble whenever the replay lands on a move he has something to say about. Poke him and he jolts
- * (awake, if he was napping); drag him and he dangles, legs kicking; let go and he drops, dazed. A
- * checkmate gets a Kamehameha across the screen.
+ * (awake, if he was napping); drag him and he dangles, legs kicking; let go and he drops, dazed (with a nosebleed
+ * if you dangled him for over five seconds). A checkmate gets a Kamehameha across the screen.
  */
 export function Sensei({ speech, mate }: Props) {
   const walkerRef = useRef<HTMLDivElement>(null)
@@ -145,8 +148,8 @@ export function Sensei({ speech, mate }: Props) {
         if (p.mode === 'fall') return { ...p, mode: 'dazed', y: 0, ms: DAZED_MS, seq: p.seq + 1 }
         if (p.mode === 'jolt' || p.mode === 'dazed') {
           return speechRef.current
-            ? { ...p, mode: 'speak', ms: 0, seq: p.seq + 1 }
-            : { ...p, mode: 'stand', ms: between(STAND_MS), seq: p.seq + 1 }
+            ? { ...p, mode: 'speak', ms: 0, seq: p.seq + 1, bleeding: false }
+            : { ...p, mode: 'stand', ms: between(STAND_MS), seq: p.seq + 1, bleeding: false }
         }
         const r = range()
         if (p.mode === 'walk') {
@@ -179,6 +182,13 @@ export function Sensei({ speech, mate }: Props) {
       setBlast(null)
     }
   }, [mate])
+
+  // Held up by the collar for too long: the nosebleed starts (and stays until he has come to).
+  useEffect(() => {
+    if (pose.mode !== 'dangle') return
+    const t = setTimeout(() => setPose((p) => (p.mode === 'dangle' ? { ...p, bleeding: true } : p)), BLEED_MS)
+    return () => clearTimeout(t)
+  }, [pose.mode])
 
   useEffect(() => () => clearTimeout(unswing.current), [])
 
@@ -254,11 +264,13 @@ export function Sensei({ speech, mate }: Props) {
   const n = speech?.note
   const label = n ? KIND_LABEL[n.kind] : null
   const mood = n ? `sensei-${n.kind} sensei-by-${n.by}` : speech ? `sensei-${speech.occasion}` : 'sensei-idle'
-  // An exceptional move is simply too much for the old man.
-  const nosebleed = n?.kind === 'brilliant'
+  // An exceptional move is simply too much for the old man. So is being dangled.
+  const nosebleed = n?.kind === 'brilliant' || pose.bleeding
   const speechKey = speech ? `${speech.ply}-${speech.lineId}` : pose.mode
   const moving = pose.mode === 'walk' || pose.mode === 'fall'
-  const beam = blast && pose.mode !== 'dangle' && pose.mode !== 'fall' ? blast : null
+  // In the air he neither talks nor fires; the bubble comes back once he has landed.
+  const airborne = pose.mode === 'dangle' || pose.mode === 'fall'
+  const beam = blast && !airborne ? blast : null
   const mark = pose.mode === 'jolt' ? '!' : pose.mode === 'dangle' ? '!!' : pose.mode === 'dazed' ? '?' : null
   const style = {
     '--x': `${pose.x}px`,
@@ -322,7 +334,7 @@ export function Sensei({ speech, mate }: Props) {
         {pose.mode === 'nap' && <span className="roshi-zzz">z z Z</span>}
         {mark && <span className="roshi-mark">{mark}</span>}
       </div>
-      {speech && (
+      {speech && !airborne && (
         <div key={speechKey} className="roshi-say" role="status">
           <span className="roshi-head">
             <span className="roshi-name">{SENSEI_NAME}</span>

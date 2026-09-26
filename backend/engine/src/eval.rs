@@ -34,6 +34,10 @@ const ROOK_OPEN: (i32, i32) = (20, 10);
 const ROOK_SEMI: (i32, i32) = (10, 5);
 const ROOK_SEVENTH: (i32, i32) = (35, 15);
 const ROOK_CENTRAL: (i32, i32) = (10, 5);
+/// Kaufman-style exchange imbalance: endgame bonus for a clean rook-for-minor surplus, growing as pawns
+/// leave the board (queenless, pawns on both wings). Game 14: R+3P vs B+4P scored -183, Stockfish -545.
+const EXCHANGE_EG_PER_PAWN_OFF: i32 = 10;
+const EXCHANGE_EG_CAP: i32 = 100;
 const KING_ATTACK_WEIGHT: [i32; 6] = [0, 3, 3, 4, 7, 0];
 const KING_ATTACK_CAP: i32 = 700;
 // Shelter of a castled (wing) king, middlegame only.
@@ -250,6 +254,8 @@ fn masks() -> &'static Masks {
 
 const FILE_A: u64 = 0x0101_0101_0101_0101;
 const FILE_H: u64 = FILE_A << 7;
+const FILES_QUEENSIDE: u64 = 0x0F0F_0F0F_0F0F_0F0F; // files a-d
+const FILES_KINGSIDE: u64 = 0xF0F0_F0F0_F0F0_F0F0; // files e-h
 
 #[inline]
 fn pawn_attacks_bb(pawns: u64, color: Color) -> u64 {
@@ -466,6 +472,24 @@ pub fn evaluate(pos: &Chess) -> i32 {
         if attackers[side] >= 2 {
             let u = attack_units[side];
             mg[side] -= (u * u / 2).min(KING_ATTACK_CAP);
+        }
+    }
+
+    // Exchange imbalance: a rook out-reaches a lone minor across two wings, more so as pawns come off.
+    // Only a clean exchange (one rook for one minor, so not R vs N+B) and only without queens (game 11:
+    // Q+R+B vs Q+B+N was already over-rated for the exchange-up side).
+    let all_pawns = pawns[0] | pawns[1];
+    if b.queens().is_empty() && all_pawns & FILES_QUEENSIDE != 0 && all_pawns & FILES_KINGSIDE != 0 {
+        let pawns_off = (16 - all_pawns.count_ones() as i32).clamp(0, 12);
+        let bonus = (EXCHANGE_EG_PER_PAWN_OFF * pawns_off).min(EXCHANGE_EG_CAP);
+        let side_colour = [Color::White, Color::Black];
+        let rooks = side_colour.map(|c| (b.rooks() & b.by_color(c)).count() as i32);
+        let minors = side_colour.map(|c| ((b.knights() | b.bishops()) & b.by_color(c)).count() as i32);
+        for side in 0..2 {
+            let other = 1 - side;
+            if rooks[side] - rooks[other] == 1 && minors[other] - minors[side] == 1 {
+                eg[side] += bonus;
+            }
         }
     }
 

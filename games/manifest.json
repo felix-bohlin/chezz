@@ -226,7 +226,7 @@
     {
       "id": "0016",
       "file": "0016_elo-3100_draw.json",
-      "analysis": null,
+      "analysis": "0016_elo-3100_draw.analysis.md",
       "date": "2026-09-26T09:23:30Z",
       "stockfishElo": 3100,
       "ourColor": "black",
@@ -236,6 +236,20 @@
       "plies": 149,
       "engineVersion": "0.1.14",
       "ourMaxMoveMs": 4723
+    },
+    {
+      "id": "0017",
+      "file": "0017_elo-3000_draw.json",
+      "analysis": null,
+      "date": "2026-09-26T09:37:52Z",
+      "stockfishElo": 3000,
+      "ourColor": "white",
+      "result": "1/2-1/2",
+      "winner": "draw",
+      "termination": "adjudicated_draw",
+      "plies": 128,
+      "engineVersion": "0.1.15",
+      "ourMaxMoveMs": 4705
     }
   ]
 }
