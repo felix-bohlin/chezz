@@ -54,7 +54,9 @@ def sf_play(sf: chess.engine.SimpleEngine, board: chess.Board) -> chess.engine.P
         with sf.analysis(board, chess.engine.Limit(time=MOVE_TIME), info=chess.engine.INFO_ALL) as an:
             scored = [i for i in an if "score" in i and i.get("multipv", 1) == 1]
             best = an.wait()
-        return chess.engine.PlayResult(best.move, best.ponder, scored[-2] if len(scored) > 1 else scored[-1] if scored else {})
+        if len(scored) > 1:
+            scored.pop()  # the post-search line; the one before it is the last completed iteration
+        return chess.engine.PlayResult(best.move, best.ponder, scored[-1] if scored else {})
 
     # analysis() has no timeout of its own; match play()'s (move time + SimpleEngine.timeout) so a stalled
     # Stockfish still raises TimeoutError. The caller then quits the process, which unblocks the worker.
@@ -93,7 +95,6 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
     try:
         while not board.is_game_over(claim_draw=True):
             is_us = board.turn == our_color
-            player = ours if is_us else sf
             live["turnStartedAt"] = time.time()
             write_live(live)
             t0 = time.perf_counter()

@@ -11,6 +11,10 @@ const ROLES: [Role; 6] = [Role::Pawn, Role::Knight, Role::Bishop, Role::Rook, Ro
 const TEMPO: i32 = 10;
 const PASSED_MG: [i32; 8] = [0, 0, 5, 10, 20, 35, 60, 0];
 const PASSED_EG: [i32; 8] = [0, 5, 10, 20, 40, 70, 110, 0];
+// Endgame bonus per square of king distance to a passed pawn's stop square, scaled by how advanced it is.
+const PASSED_KING_THEM: i32 = 4;
+const PASSED_KING_US: i32 = 2;
+const PASSED_KING_W: [i32; 8] = [0, 0, 0, 1, 2, 3, 4, 0];
 const DOUBLED: (i32, i32) = (10, 20);
 const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
@@ -292,6 +296,14 @@ pub fn evaluate(pos: &Chess) -> i32 {
                             let rel = if us == 0 { s / 8 } else { 7 - s / 8 };
                             mg[us] += PASSED_MG[rel];
                             eg[us] += PASSED_EG[rel];
+                            // Kings racing to the pawn's stop square decide passed-pawn endgames.
+                            let stop = if us == 0 { s + 8 } else { s.wrapping_sub(8) };
+                            if rel >= 3 && stop < 64 {
+                                let stop_sq = Square::new(stop as u32);
+                                let d_them = king_sq[them].map_or(7, |k| k.distance(stop_sq) as i32);
+                                let d_us = king_sq[us].map_or(7, |k| k.distance(stop_sq) as i32);
+                                eg[us] += (PASSED_KING_THEM * d_them - PASSED_KING_US * d_us) * PASSED_KING_W[rel];
+                            }
                         }
                         if m.adjacent[f] & pawns[us] == 0 {
                             mg[us] -= ISOLATED.0;

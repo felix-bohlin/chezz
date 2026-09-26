@@ -113,7 +113,7 @@
     {
       "id": "0008",
       "file": "0008_elo-2900_win.json",
-      "analysis": null,
+      "analysis": "0008_elo-2900_win.analysis.md",
       "date": "2026-09-26T06:57:12Z",
       "stockfishElo": 2900,
       "ourColor": "black",
