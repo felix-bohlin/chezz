@@ -6,11 +6,13 @@ import { START_FEN, sideToMove } from '../lib/fen'
 import { spriteUrl } from '../pixel/render'
 import { buildEnding, buildStory, type PlyStory } from '../story/dialogue'
 import { ENDING_TITLE } from '../story/intro'
+import { buildSensei, KIND_LABEL, parseSenseiNotes } from '../story/sensei'
 import type { Bubble, DisplayMode } from '../story/types'
 import type { GameRecord, ManifestEntry } from '../types/game'
 import { Board } from './Board'
 import { EvalChart } from './EvalChart'
 import { MoveTimer, OVER_TOLERANCE_MS } from './MoveTimer'
+import { Sensei } from './Sensei'
 
 const SPEEDS = [
   { label: '½×', ms: 2000 },
@@ -25,6 +27,7 @@ const BUBBLE_MODES: { mode: DisplayMode; label: string }[] = [
   { mode: 'all', label: 'All' },
 ]
 const BUBBLE_MODE_KEY = 'chezz.bubbles'
+const SENSEI_KEY = 'chezz.sensei'
 /** The battle's title card holds the stage this long before the lords start talking. */
 const TITLE_CARD_MS = 5000
 
@@ -38,10 +41,19 @@ function loadBubbleMode(): DisplayMode {
   return 'key'
 }
 
+function loadSenseiOn(): boolean {
+  try {
+    return localStorage.getItem(SENSEI_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
+
+const readOne = (text: string) => Math.min(4000, Math.max(1500, 1200 + 45 * text.length))
+
 /** How long a ply's bubbles need on screen to be read (03 §5): reply starts 600 ms after the primary. */
 function readMs(bubbles: Bubble[]): number {
-  const one = (b: Bubble) => Math.min(4000, Math.max(1500, 1200 + 45 * b.text.length))
-  return bubbles.reduce((ms, b) => Math.max(ms, (b.isReply ? 600 : 0) + one(b)), 0)
+  return bubbles.reduce((ms, b) => Math.max(ms, (b.isReply ? 600 : 0) + readOne(b.text)), 0)
 }
 
 function plyAudio(s: PlyStory) {
@@ -96,6 +108,8 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const [speed, setSpeed] = useState(1)
   const [showScroll, setShowScroll] = useState(false)
   const [bubbleMode, setBubbleMode] = useState<DisplayMode>(loadBubbleMode)
+  const [senseiOn, setSenseiOn] = useState(loadSenseiOn)
+  const [senseiDismissed, setSenseiDismissed] = useState<number | null>(null)
   const [muted, setMuted] = useState(() => getSettings().muted)
   const moveListRef = useRef<HTMLOListElement>(null)
   const prevTotal = useRef(game.moves.length)
@@ -110,6 +124,20 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
     const all = story[ply]?.bubbles ?? []
     return bubbleMode === 'off' ? [] : bubbleMode === 'key' ? all.filter((b) => b.key) : all
   }, [story, ply, bubbleMode])
+
+  const sensei = useMemo(() => buildSensei(game.id, parseSenseiNotes(analysis)), [game.id, analysis])
+  // Hidden under the title card and the result banner; a click dismisses it for that move.
+  const senseiComment =
+    senseiOn && !(titleCard && ply === 0) && !(!live && ply === total) && senseiDismissed !== ply ? sensei.get(ply) : undefined
+
+  const toggleSensei = () => {
+    setSenseiOn(!senseiOn)
+    try {
+      localStorage.setItem(SENSEI_KEY, senseiOn ? 'off' : 'on')
+    } catch {
+      // non-essential
+    }
+  }
 
   const chooseBubbleMode = (mode: DisplayMode) => {
     setBubbleMode(mode)
@@ -166,9 +194,11 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
     }
     // In "key" mode, autoplay lingers on key moments long enough to read them.
     const hold = bubbleMode === 'key' && bubbles.length ? readMs(bubbles) : 0
-    const t = setTimeout(() => setPly((p) => p + 1), Math.max(SPEEDS[speed].ms, hold))
+    // ...and on the sensei's verdicts, whatever the bubble mode.
+    const senseiHold = senseiComment ? readOne(senseiComment.text) + 500 : 0
+    const t = setTimeout(() => setPly((p) => p + 1), Math.max(SPEEDS[speed].ms, hold, senseiHold))
     return () => clearTimeout(t)
-  }, [playing, ply, total, speed, bubbleMode, bubbles])
+  }, [playing, ply, total, speed, bubbleMode, bubbles, senseiComment])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -244,6 +274,9 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
         {theirs}
         <div className="board-wrap">
           <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} />
+          {senseiComment && (
+            <Sensei key={senseiComment.ply} comment={senseiComment} onDismiss={() => setSenseiDismissed(ply)} />
+          )}
           {showTitleCard && (
             <button className="title-card" onClick={() => setTitleCard(false)} aria-label="Dismiss title card">
               <span className="title-card-kicker">伊賀越え · The Night of Iga</span>
@@ -322,6 +355,17 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               </button>
             ))}
           </div>
+          {sensei.size > 0 && (
+            <button
+              className={`px-chip${senseiOn ? ' active' : ''}`}
+              onClick={toggleSensei}
+              aria-pressed={senseiOn}
+              aria-label={senseiOn ? 'Hide the sensei' : 'Show the sensei'}
+              title="The hermit sensei comments on blunders, mistakes and fine moves"
+            >
+              師 {senseiOn ? 'On' : 'Off'}
+            </button>
+          )}
           <button
             className={`px-chip${muted ? '' : ' active'}`}
             onClick={toggleSound}
@@ -394,6 +438,9 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
                       onClick={() => seek(x.i + 1)}
                     >
                       {x.m.san}
+                      {sensei.has(x.i + 1) && (
+                        <span className={`mv-glyph glyph-${sensei.get(x.i + 1)!.kind}`}>{KIND_LABEL[sensei.get(x.i + 1)!.kind].glyph}</span>
+                      )}
                       <span className={`mv-time${x.m.timeMs > limitMs + OVER_TOLERANCE_MS ? ' mv-time-over' : ''}`}>
                         {(x.m.timeMs / 1000).toFixed(1)}s
                       </span>

@@ -1,3 +1,4 @@
+import { HERMIT, HERMIT_PALETTE } from './hermit'
 import { SPRITES, SPRITE_SIZE, colorFor, type Army, type PieceType } from './sprites'
 
 const cache = new Map<string, string>()
@@ -31,6 +32,15 @@ export function spriteUrl(type: PieceType, army: Army): string {
 }
 
 export { SPRITE_SIZE }
+
+export function hermitUrl(): string {
+  let url = cache.get('hermit')
+  if (!url) {
+    url = gridToUrl(HERMIT, (k) => HERMIT_PALETTE[k] ?? null)
+    cache.set('hermit', url)
+  }
+  return url
+}
 
 // Board tiles: raked sand (light) and moss stone (dark), 20x20 like the sprites.
 const TILE_COLORS: Record<string, string> = {

@@ -14,6 +14,8 @@ pub const MATE_BOUND: i32 = MATE - 1000;
 pub const MAX_PLY: usize = 128;
 
 const SKIP: i32 = i32::MIN;
+/// Null-move depth reduction base. 3 hid a 7–8 ply refutation at depth 17 (game 10, ply 42).
+const NULL_MOVE_BASE_R: i32 = 2;
 /// Ordering score for the counter move: below both killers, above losing captures.
 const COUNTER_MOVE_SCORE: i32 = 7_000_000;
 /// Losing captures (by SEE) are skipped at shallow depth when they lose more than this per ply.
@@ -509,7 +511,7 @@ impl Searcher {
                 return static_eval;
             }
             if can_null && depth >= 3 && static_eval >= beta && has_non_pawn(pos) {
-                let r = 3 + depth / 6;
+                let r = NULL_MOVE_BASE_R + depth / 6;
                 if let Ok(null_pos) = pos.clone().swap_turn() {
                     let nh = hash_of(&null_pos);
                     self.move_stack[ply] = 0;

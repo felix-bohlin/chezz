@@ -1,10 +1,15 @@
 """Objective post-game report: full-strength Stockfish re-evaluates every position of a saved game.
 
 Usage:
-    python backend/analyze.py games/0001_elo-1320_win.json [--time 0.15] [--top 8]
+    python backend/analyze.py games/0001_elo-1320_win.json [--time 0.15] [--top 8] [--annotate]
 
 Prints a compact markdown report (stats + our worst moves with FENs) to stdout. This is the
 evidence the analyze-game skill and the two analysis agents work from.
+
+The report ends with a one-line `<!-- sensei-moves {...} -->` block: every notable move of both
+sides (blunder / mistake / good / brilliant) as JSON. It is invisible in rendered markdown; the
+replay app reads it from the .analysis.md to drive the sensei's commentary. `--annotate` writes
+(or refreshes) just that block in the game's existing .analysis.md.
 """
 
 from __future__ import annotations
@@ -12,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 
 import chess
 import chess.engine
@@ -19,6 +25,13 @@ import chess.engine
 from common import ROOT, STOCKFISH
 
 MATE_CP = 3000
+# Sensei praise: the played move was Stockfish's best and the second-best move was this much worse
+# (evals clamped to ±PRAISE_CLAMP, so "winning either way" never counts as an only-move).
+GOOD_GAP = 100
+BRILLIANT_GAP = 250
+PRAISE_CLAMP = 800
+VALUE = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
+SENSEI_RE = re.compile(r"\n*<!-- sensei-moves .*? -->\n?")
 
 
 def cp_white(info: dict) -> int:
@@ -35,6 +48,40 @@ def classify(loss: int) -> str | None:
     return None
 
 
+def is_sacrifice(board: chess.Board, move: chess.Move) -> bool:
+    """The moved piece (not a pawn or king) lands where it can be taken for at least 2 points net."""
+    piece = board.piece_at(move.from_square)
+    if not piece or piece.piece_type in (chess.PAWN, chess.KING):
+        return False
+    captured = board.piece_at(move.to_square)
+    gain = VALUE[captured.piece_type] if captured else 0
+    after = board.copy(stack=False)
+    after.push(move)
+    attackers = after.attackers(not piece.color, move.to_square)
+    if not attackers:
+        return False
+    cheapest = min(VALUE[after.piece_type_at(sq)] or 99 for sq in attackers)
+    defended = bool(after.attackers(piece.color, move.to_square))
+    lost = max(0, VALUE[piece.piece_type] - cheapest) if defended else VALUE[piece.piece_type]
+    return gain - lost <= -2
+
+
+def sensei_kind(kind: str | None, played_best: bool, best: int, second: int | None, sac: bool) -> str | None:
+    if kind in ("blunder", "mistake"):
+        return kind
+    if not played_best or second is None:
+        return None
+    gap = max(-PRAISE_CLAMP, min(best, PRAISE_CLAMP)) - max(-PRAISE_CLAMP, min(second, PRAISE_CLAMP))
+    if gap >= BRILLIANT_GAP or (gap >= GOOD_GAP and sac):
+        return "brilliant"
+    return "good" if gap >= GOOD_GAP else None
+
+
+def annotate(analysis: pathlib.Path, block: str) -> None:
+    text = SENSEI_RE.sub("", analysis.read_text(encoding="utf-8")).rstrip("\n")
+    analysis.write_text(text + "\n\n" + block + "\n", encoding="utf-8")
+
+
 def phase_of(board: chess.Board, ply: int) -> str:
     if ply <= 20:
         return "opening"
@@ -48,6 +95,7 @@ def main() -> None:
     ap.add_argument("game")
     ap.add_argument("--time", type=float, default=0.15, help="Stockfish seconds per position")
     ap.add_argument("--top", type=int, default=8)
+    ap.add_argument("--annotate", action="store_true", help="write the sensei-moves block into the .analysis.md")
     args = ap.parse_args()
 
     path = pathlib.Path(args.game)
@@ -63,11 +111,14 @@ def main() -> None:
     limit = chess.engine.Limit(time=args.time)
 
     evals = []  # white-POV eval before each ply, plus final
+    seconds = []  # white-POV eval of the second-best move (None when there is only one legal move)
     bests = []
     try:
         for m in rec["moves"]:
-            info = sf.analyse(board, limit)
+            infos = sf.analyse(board, limit, multipv=2)
+            info = infos[0]
             evals.append(cp_white(info))
+            seconds.append(cp_white(infos[1]) if len(infos) > 1 else None)
             pv = info.get("pv") or []
             bests.append(board.san(pv[0]) if pv else "?")
             board.push_uci(m["uci"])
@@ -86,17 +137,29 @@ def main() -> None:
     counts = {"us": {}, "stockfish": {}}
     phase_loss = {"opening": [], "middlegame": [], "endgame": []}
     max_adv = -10**9
+    sensei = []  # notable moves of both sides, for the replay's sensei commentary
     for i, m in enumerate(rec["moves"]):
         mover_sign = 1 if board.turn == chess.WHITE else -1
         before = evals[i] * mover_sign
         after = evals[i + 1] * mover_sign
         loss = max(0, min(before, MATE_CP) - min(after, MATE_CP))
-        if bests[i] == board.san(chess.Move.from_uci(m["uci"])):
+        move = chess.Move.from_uci(m["uci"])
+        played_best = bests[i] == board.san(move)
+        if played_best:
             loss = 0  # we played the engine's best move; any eval drop is depth resolution, not an error
         stats[m["by"]].append(min(loss, 1000))
         kind = classify(loss)
         if kind:
             counts[m["by"]][kind] = counts[m["by"]].get(kind, 0) + 1
+        second = None if seconds[i] is None else seconds[i] * mover_sign
+        sk = sensei_kind(kind, played_best, before, second, is_sacrifice(board, move))
+        if sk:
+            # before/after from OUR point of view, like the report's eval columns
+            note = {"ply": i + 1, "by": m["by"], "kind": sk, "san": m["san"], "best": bests[i],
+                    "before": evals[i] * sign, "after": evals[i + 1] * sign}
+            if kind:
+                note["loss"] = loss
+            sensei.append(note)
         if m["by"] == "us":
             ph = phase_of(board, i + 1)
             phase_loss[ph].append(min(loss, 1000))
@@ -155,7 +218,17 @@ def main() -> None:
                        f"{r['loss']} {r['kind'] or ''} | {r['phase']} | {own} | {r['depth']} | `{r['fen']}` |")
     else:
         out.append("### No significant errors by us (all moves within 40 cp of Stockfish's best).")
+    block = "<!-- sensei-moves " + json.dumps({"v": 1, "moves": sensei}, separators=(",", ":"), ensure_ascii=False) + " -->"
+    out.append("")
+    out.append(block)
     print("\n".join(out))
+    if args.annotate:
+        analysis = path.with_name(path.name.replace(".json", ".analysis.md"))
+        if analysis.exists():
+            annotate(analysis, block)
+            print(f"annotated {analysis.name}")
+        else:
+            print(f"no {analysis.name} to annotate")
 
 
 if __name__ == "__main__":

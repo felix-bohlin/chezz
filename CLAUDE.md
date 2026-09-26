@@ -44,6 +44,9 @@ One JSON file per game — `games/NNNN_elo-XXXX_{win|loss|draw}.json` — plus a
 - The frontend needs no chess logic to render a position: every move carries `fenAfter`.
 - The engine was called `chezz` up to 0.1.8 and `musashi` from 0.1.9; older games keep `"name": "chezz"`.
 - The TypeScript mirror of this type lives in `frontend/src/types/game.ts` — keep them in sync.
+- The `.analysis.md` ends with a one-line `<!-- sensei-moves {"v":1,"moves":[…]} -->` block written by
+  `analyze.py` (both sides' blunders / mistakes / good / brilliant moves). The replay's hermit sensei reads it
+  (`frontend/src/story/sensei.ts`); refresh it for an old game with `python backend/analyze.py <game> --annotate`.
 
 ## Commands
 

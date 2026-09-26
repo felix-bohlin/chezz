@@ -17,6 +17,8 @@ Required by the competition rules after **every** game: this skill + two differe
    python backend/analyze.py games/<STEM>.json
    ```
    Keep the printed markdown as `REPORT`. (Prepend Python to PATH first if `python` isn't found; see CLAUDE.md.)
+   Its last line is a `<!-- sensei-moves {...} -->` block — keep it verbatim in the analysis file (it drives
+   the replay's sensei commentary), but don't pass it to the sub-agents.
 
 3. **Two sub-agents in parallel.** In a *single* message, launch both with the Agent tool:
    - `subagent_type: shogun-sensei`

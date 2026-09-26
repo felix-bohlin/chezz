@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { About } from './components/About'
 import { Dojo } from './components/Dojo'
 import { IntroScroll } from './components/IntroScroll'
 import { Live, useLive } from './components/Live'
@@ -47,6 +48,7 @@ export default function App() {
   const gameId = route?.[1]
   const initialPly = route?.[2] ? Number(route[2]) : 0
   const isLive = hash.startsWith('#/live')
+  const isAbout = hash.startsWith('#/about')
   const entry = gameId ? manifest?.games.find((g) => g.id === gameId) : undefined
   const openGame = (id: string) => (window.location.hash = `#/game/${id}`)
 
@@ -67,7 +69,12 @@ export default function App() {
                 <span className="live-dot" /> LIVE vs {live.stockfishElo}
               </a>
             )}
-            {(gameId || isLive) && (
+            {!isAbout && (
+              <a className="px-btn" href="#/about" aria-label="Fair play: how every move is verified legal">
+                正 Fair play
+              </a>
+            )}
+            {(gameId || isLive || isAbout) && (
               <a className="px-btn" href="#/">
                 ◀ Campaign
               </a>
@@ -77,6 +84,8 @@ export default function App() {
         <main>
           {isLive ? (
             <Live />
+          ) : isAbout ? (
+            <About manifest={manifest} />
           ) : (
             <>
               {error && !manifest && <div className="px-panel notice">Could not load games/manifest.json: {error}</div>}
