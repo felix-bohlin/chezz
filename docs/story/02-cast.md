@@ -8,10 +8,10 @@ Both sides use the **same six roles**, one per piece type. The role sets how a p
 | `commander` | Queen | heavy* | Hattori Hanzō | Akechi Hidemitsu |
 | `ninja` | Knight | none | Iga ninja | Kōka scouts |
 | `monk` | Bishop | light | Yamabushi (mountain ascetics) | Warrior monks (sōhei) |
-| `rider` | Rook | heavy | Tokugawa mounted samurai | Akechi cavalry |
+| `garrison` | Rook | heavy | Tokugawa castle garrison | Akechi garrison |
 | `ashigaru` | Pawn | light | Ashigaru foot soldiers | Samurai hunters (*ochimusha-gari*) |
 
-The current pixel sprite for the rook is a castle keep (tenshu). Making it a mounted samurai (`rider`) is proposed because a moving tower looks odd. The role name and lines work for either sprite: "To your side, my lord!" fits a castle wall too.
+The rook is a castle keep (tenshu) with its garrison of samurai and archers. Their lines are about walls, gates, arrows and honor. Since the knights ride horses, no rook line mentions horses.
 
 \* Hanzō wears heavy armor but **moves like a ninja** (vanishes and reappears). This makes him the ninja commander, not just an armored piece. Hidemitsu moves like a heavy general.
 
@@ -54,11 +54,11 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 - **Signature lines:** "The straight road is for fools." / "The mountain does not move. Nor do I."
 - **Look:** white and ochre robes, a small black *tokin* cap, a conch-shell horn, a staff.
 
-### Tokugawa riders — `rider` (Rook)
-- **Personality:** proud, loud, honorable, and eager to charge. They hate retreating.
-- **Voice:** exclamations, "honor", "glory", and challenges shouted at the enemy.
-- **Signature lines:** "Face me, coward!" / "To your side, my lord!"
-- **Look:** heavy armored samurai on a sturdy horse, with a tall *sashimono* banner on the back.
+### Tokugawa garrison — `garrison` (Rook)
+- **Personality:** the samurai and archers holding a castle keep. Proud, loud, honorable, and eager to sally out. They hate retreating.
+- **Voice:** exclamations about walls, gates, arrows, "honor" and "glory", and challenges shouted at the enemy.
+- **Signature lines:** "Face me, coward!" / "To your side, my lord!" / "The wall is raised! None shall pass!"
+- **Look:** a tenshu castle keep in ivory lacquer with indigo roofs (sprite `r`).
 
 ### Ashigaru — `ashigaru` (Pawn)
 - **Personality:** frightened common soldiers who secretly dream of becoming samurai. The comic heart of the cast.
@@ -94,11 +94,11 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 - **Signature lines:** "Your karma found you." / "Mount Hiei... is avenged..."
 - **Look:** dark hooded robes (*sōhei* style) and a *naginata*.
 
-### Akechi cavalry — `rider` (Rook)
-- **Personality:** brutal, loud and impatient. They love trampling.
-- **Voice:** battle cries and insults ("Tokugawa dog", "old fox").
-- **Signature lines:** "Run, old fox! Run!" / "Trampled!"
-- **Look:** black-and-blue armor, horses with barding, bellflower banners.
+### Akechi garrison — `garrison` (Rook)
+- **Personality:** brutal, loud and impatient. They love crushing anyone who comes near their walls.
+- **Voice:** battle cries and insults ("Tokugawa dog", "old fox"), gates and arrows.
+- **Signature lines:** "Run, old fox! Run!" / "Crushed beneath the walls!" / "Loose the arrows!"
+- **Look:** a tenshu castle keep in crimson lacquer with charcoal roofs (sprite `r`).
 
 ### Samurai hunters — `ashigaru` (Pawn)
 - **Personality:** greedy local peasants hunting fleeing samurai for the bounty. Not evil, just poor and opportunistic.
@@ -116,7 +116,7 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 | commander | Hanzō | Hidemitsu |
 | ninja | Iga ninja | Kōka scout |
 | monk | yamabushi | warrior monk |
-| rider | samurai rider | Akechi rider |
+| garrison | castle garrison | Akechi garrison |
 | ashigaru | ashigaru | hunter |
 
-`{target}` always uses the **target's own side** for its name. When Hanzō takes an Akechi rook, `{target}` = "Akechi rider".
+`{target}` always uses the **target's own side** for its name. When Hanzō takes an Akechi rook, `{target}` = "Akechi garrison".

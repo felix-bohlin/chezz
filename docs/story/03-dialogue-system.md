@@ -43,7 +43,7 @@ At most **2 bubbles per ply**: one primary and one optional reply. The primary i
 | 7 | `sacrifice` | see 2.3 | mover | — |
 | 8 | `brilliant` | sacrifice that the evals say is sound (2.4) | mover | — |
 | 8 | `blunder` | eval collapse for the mover (2.4) | **opponent's commander** (lord if no commander) | — |
-| 9 | `castle` | `move.flags` has `k` or `q` | the rook (`rider`) | lord → `castle` (`all` mode only) |
+| 9 | `castle` | `move.flags` has `k` or `q` | the rook (`garrison`) | lord → `castle` (`all` mode only) |
 | 10 | `en_passant` | `move.flags` has `e` (classified **instead of** `capture`) | mover | — |
 | 11 | `hanging` | newly undefended and attacked enemy piece (2.3) | **the victim** | — |
 | 12 | `pinned` | newly pinned enemy piece (2.3) | **the victim** | — |

@@ -213,7 +213,7 @@ function detect(before: Chess, after: Chess, move: Move, evals: (number | undefi
     const rank = me === 'w' ? '1' : '8'
     const rookSq = `${move.flags.includes('k') ? 'f' : 'd'}${rank}` as Square
     return {
-      primary: { situation: 'castle', sq: rookSq, color: me, role: 'rider' },
+      primary: { situation: 'castle', sq: rookSq, color: me, role: 'garrison' },
       reply: { ...lordOf(me), situation: 'castle', optional: true },
     }
   }

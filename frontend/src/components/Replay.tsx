@@ -250,7 +250,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               <span className="title-card-game">── Battle #{game.id} ──</span>
               <span className="title-card-sides">
                 <span className="title-card-side">
-                  Tokugawa<small>chezz · {game.ourColor}</small>
+                  Tokugawa<small>Musashi · {game.ourColor}</small>
                 </span>
                 <span className="title-card-vs">vs</span>
                 <span className="title-card-side">

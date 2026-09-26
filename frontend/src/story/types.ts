@@ -3,7 +3,7 @@
 
 export type Side = "tokugawa" | "akechi";
 
-export type Role = "lord" | "commander" | "ninja" | "monk" | "rider" | "ashigaru";
+export type Role = "lord" | "commander" | "ninja" | "monk" | "garrison" | "ashigaru";
 
 export type ArmorClass = "none" | "light" | "heavy" | "heaviest";
 
@@ -96,7 +96,7 @@ export const ROLE_BY_PIECE: Record<"k" | "q" | "n" | "b" | "r" | "p", Role> = {
   q: "commander",
   n: "ninja",
   b: "monk",
-  r: "rider",
+  r: "garrison",
   p: "ashigaru",
 };
 
@@ -105,7 +105,7 @@ export const ARMOR: Record<Role, ArmorClass> = {
   commander: "heavy",
   ninja: "none",
   monk: "light",
-  rider: "heavy",
+  garrison: "heavy",
   ashigaru: "light",
 };
 
@@ -116,7 +116,7 @@ export const DISPLAY_NAME: Record<Side, Record<Role, string>> = {
     commander: "Hanzō",
     ninja: "Iga ninja",
     monk: "yamabushi",
-    rider: "samurai rider",
+    garrison: "castle garrison",
     ashigaru: "ashigaru",
   },
   akechi: {
@@ -124,7 +124,7 @@ export const DISPLAY_NAME: Record<Side, Record<Role, string>> = {
     commander: "Hidemitsu",
     ninja: "Kōka scout",
     monk: "warrior monk",
-    rider: "Akechi rider",
+    garrison: "Akechi garrison",
     ashigaru: "hunter",
   },
 };
