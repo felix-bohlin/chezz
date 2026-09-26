@@ -1,4 +1,4 @@
-# CHEZZ frontend: pixel-art replay
+# CHEZZ: TOTAL WAR — pixel-art replay frontend
 
 Vite + React + TypeScript. There is no chess library and no backend API: the app reads `../games/`
 (served at `/games` by a small plugin in `vite.config.ts`, copied into `dist/games` on build).

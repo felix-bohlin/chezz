@@ -36,7 +36,10 @@ export function Dojo({ manifest, live, onOpen }: Props) {
     <div className="dojo">
       <header className="hero">
         <div className="hero-kanji">戦国</div>
-        <h1 className="hero-title">CHEZZ</h1>
+        <h1 className="hero-title">
+          CHEZZ
+          <span className="hero-title-war">TOTAL WAR</span>
+        </h1>
         <p className="hero-sub">Our engine marches on Stockfish. One province per Elo. Draws do not count.</p>
         <div className="hero-stats">
           <div className="px-panel stat">
@@ -62,7 +65,7 @@ export function Dojo({ manifest, live, onOpen }: Props) {
           <span className="live-banner-text">
             <b>Battle #{live.id} is being fought right now</b>
             <span>
-              chezz {live.engine.version} as {live.ourColor} vs Stockfish UCI_Elo {live.stockfishElo} · move{' '}
+              Musashi {live.engine.version} as {live.ourColor} vs Stockfish UCI_Elo {live.stockfishElo} · move{' '}
               {Math.ceil(live.moves.length / 2) || 1}
             </span>
           </span>

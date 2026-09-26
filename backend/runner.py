@@ -21,6 +21,7 @@ import chess.engine
 import chess.pgn
 
 from common import ENGINE, GAMES, STOCKFISH, git_commit, load_games, next_game_id, next_ladder_elo, write_indexes
+from verify_games import verify
 
 MOVE_TIME = 5.0  # seconds per move, both players (competition rule)
 EVAL_CLAMP = 2000
@@ -28,10 +29,23 @@ LIVE = GAMES / "live.json"
 
 
 def write_live(state: dict) -> None:
-    """Snapshot for the frontend's live view; written atomically so readers never see half a file."""
+    """Snapshot for the frontend's live view; written atomically so readers never see half a file.
+
+    Best effort only: on Windows the replace fails while a reader (the dev server polling for the live
+    view) has live.json open. The live view is cosmetic and must never crash a ladder game.
+    """
     tmp = LIVE.with_suffix(".tmp")
-    tmp.write_text(json.dumps({**state, "updatedAt": time.time()}), encoding="utf-8")
-    tmp.replace(LIVE)
+    try:
+        tmp.write_text(json.dumps({**state, "updatedAt": time.time()}), encoding="utf-8")
+    except OSError:
+        return
+    for _ in range(10):
+        try:
+            tmp.replace(LIVE)
+            return
+        except PermissionError:
+            time.sleep(0.02)
+    # Still locked after ~200 ms: skip this snapshot, the next move writes a fresh one.
 
 
 def white_eval(info: dict) -> tuple[int | None, int | None]:
@@ -72,7 +86,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
     sf = chess.engine.SimpleEngine.popen_uci(str(STOCKFISH))
     sf.configure({"UCI_LimitStrength": True, "UCI_Elo": elo})
     sf_version = sf.id.get("name", "Stockfish")
-    our_name = ours.id.get("name", "chezz")
+    our_name = ours.id.get("name", "musashi")
 
     board = chess.Board()
     moves = []
@@ -86,7 +100,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         "stockfishElo": elo,
         "stockfishVersion": sf_version,
         "ourColor": "white" if our_color == chess.WHITE else "black",
-        "engine": {"name": "chezz", "version": our_name.split()[-1], "commit": git_commit()},
+        "engine": {"name": "musashi", "version": our_name.split()[-1], "commit": git_commit()},
         "startFen": chess.STARTING_FEN,
         "moves": moves,
     }
@@ -127,8 +141,12 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
                 violations.append(len(moves) + 1)
                 print(f"!!! TIME VIOLATION: our move at ply {len(moves) + 1} took {ms} ms (limit {MOVE_TIME:g} s)",
                       file=sys.stderr, flush=True)
-            if res.move is None:
+            # python-chess already rejects an illegal bestmove (push_uci raises -> EngineError above), but a
+            # null move (0000) parses fine, so check legality once more before anything is recorded.
+            if res.move is None or res.move not in board.legal_moves:
                 termination = "engine-error" if is_us else "stockfish-error"
+                print(f"engine failure ({'us' if is_us else 'stockfish'}): bestmove {res.move} is not legal in "
+                      f"{board.fen()}", file=sys.stderr, flush=True)
                 break
             cp, mate = white_eval(res.info)
             san = board.san(res.move)
@@ -177,7 +195,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
 
     pgn_game = chess.pgn.Game()
     pgn_game.headers.update({
-        "Event": "chezz vs Stockfish ladder",
+        "Event": "Musashi vs Stockfish ladder",
         "Site": "local",
         "Date": started.strftime("%Y.%m.%d"),
         "Round": game_id,
@@ -209,7 +227,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         "result": result,
         "winner": winner,
         "termination": termination,
-        "engine": {"name": "chezz", "version": version, "commit": git_commit()},
+        "engine": {"name": "musashi", "version": version, "commit": git_commit()},
         "startFen": chess.STARTING_FEN,
         "ourMaxMoveMs": max((m["timeMs"] for m in moves if m["by"] == "us"), default=0),
         "timeViolations": violations,
@@ -220,6 +238,12 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
     GAMES.mkdir(exist_ok=True)
     path = GAMES / f"{game_id}_elo-{elo}_{outcome_word}.json"
     path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+    # Independent replay of what was just saved (the verify_games.py check): every move legal, SAN/FEN/PGN
+    # and result consistent. A failure here is a bug and must never go unnoticed.
+    errors, _ = verify({**record, "_file": path.name})
+    for e in errors:
+        print(f"!!! VERIFY FAILED games/{path.name}: {e}", file=sys.stderr, flush=True)
+    print(f"verify games/{path.name}: {'FAIL' if errors else 'ok'}", flush=True)
     write_indexes()
     write_live({"active": False, "lastGameId": game_id})
     return path
@@ -247,7 +271,7 @@ def main() -> None:
             our_color = chess.WHITE if int(next_game_id()) % 2 == 1 else chess.BLACK
         else:
             our_color = chess.WHITE if args.color == "white" else chess.BLACK
-        print(f"=== game {next_game_id()}: chezz ({'white' if our_color else 'black'}) vs Stockfish UCI_Elo {elo} ===",
+        print(f"=== game {next_game_id()}: musashi ({'white' if our_color else 'black'}) vs Stockfish UCI_Elo {elo} ===",
               flush=True)
         path = play_game(elo, our_color, verbose=not args.quiet)
         rec = json.loads(path.read_text(encoding="utf-8"))

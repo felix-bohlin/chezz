@@ -1,6 +1,6 @@
 ---
 name: ladder-cycle
-description: One full improvement cycle for the chezz engine - play a game vs Stockfish at the next ladder Elo, analyze it (analyze-game skill + both sub-agents), implement and regression-test the top suggestion. Designed to be run repeatedly with /loop /ladder-cycle under a /goal.
+description: One full improvement cycle for the Musashi engine - play a game vs Stockfish at the next ladder Elo, analyze it (analyze-game skill + both sub-agents), implement and regression-test the top suggestion. Designed to be run repeatedly with /loop /ladder-cycle under a /goal.
 ---
 
 # Ladder cycle: play → analyze → improve
@@ -38,14 +38,14 @@ Then invoke the `analyze-game` skill with `games/<STEM>.json`. It runs full-stre
 
 ## 3. Improve (one change per cycle)
 
-1. Save a baseline: copy `backend/engine/target/release/chezz.exe` to `backend/engine/baseline/chezz.exe`.
+1. Save a baseline: copy `backend/engine/target/release/musashi.exe` to `backend/engine/baseline/musashi.exe`.
 2. Implement the **Decision → Implement next** change in `backend/engine/src/`. Keep it small.
 3. Bump the patch version in `backend/engine/Cargo.toml`.
-4. `cargo build --release`, then `echo bench | target/release/chezz.exe`: must run cleanly and nps must
+4. `cargo build --release`, then `echo bench | target/release/musashi.exe`: must run cleanly and nps must
    not drop by more than ~20% unless the change is eval knowledge that is worth it.
 5. Regression check (≈3 min):
    ```
-   python backend/selfplay.py --baseline backend/engine/baseline/chezz.exe --games 16 --time 0.1
+   python backend/selfplay.py --baseline backend/engine/baseline/musashi.exe --games 16 --time 0.1
    ```
    - Exit code 0 (≥ 40%): keep the change — but if it touched search, threading or time management,
      also run `python backend/timecheck.py --positions 10` (≈1 min) and revert on any move over 5000 ms.

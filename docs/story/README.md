@@ -1,6 +1,6 @@
-# The Night of Iga: story layer for chezz
+# The Night of Iga: story layer for Chezz: Total War
 
-**Pitch.** June 1582. Oda Nobunaga has just been betrayed and killed at Honnō-ji. Tokugawa Ieyasu is trapped far from home with a handful of men, and Akechi Mitsuhide's army is hunting him. Legend says Hattori Hanzō, the "Demon Hanzō", led him through the mountains of Iga to safety. **Every chess game in chezz is that night, replayed.** Our engine plays the Tokugawa side. Stockfish plays Akechi's pursuers. The pieces are people: they talk, they are afraid, they gloat, and they move according to who they are and how much armor they wear.
+**Pitch.** June 1582. Oda Nobunaga has just been betrayed and killed at Honnō-ji. Tokugawa Ieyasu is trapped far from home with a handful of men, and Akechi Mitsuhide's army is hunting him. Legend says Hattori Hanzō, the "Demon Hanzō", led him through the mountains of Iga to safety. **Every chess game in Chezz: Total War is that night, replayed.** Our engine plays the Tokugawa side. Stockfish plays Akechi's pursuers. The pieces are people: they talk, they are afraid, they gloat, and they move according to who they are and how much armor they wear.
 
 There is **no campaign or Elo progression** in the story. Games run as tests against Stockfish, and the story layer is driven entirely by the **position**: each ply's FEN (plus the move that led to it) decides who speaks, what they say, and how every piece behaves.
 

@@ -53,7 +53,7 @@ export default function App() {
       <div className="app">
         <nav className="topbar">
           <a className="brand" href="#/">
-            <span className="brand-mon">棋</span> CHEZZ
+            <span className="brand-mon">棋</span> CHEZZ<span className="brand-war">: TOTAL WAR</span>
           </a>
           <div className="topbar-actions">
             {live?.active && !isLive && (

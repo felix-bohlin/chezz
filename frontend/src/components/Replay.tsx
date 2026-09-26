@@ -221,7 +221,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
     )
   }
 
-  const ours = general(ourArmy, `Chezz ${game.engine.version}`, 'Our engine · Rust · 5s/move', 'bottom', true)
+  const ours = general(ourArmy, `Musashi ${game.engine.version}`, 'Our engine · Rust · 5s/move', 'bottom', true)
   const theirs = general(sfArmy, 'Stockfish', `${game.stockfishVersion} · UCI_Elo ${game.stockfishElo}`, 'top', false)
 
   return (
@@ -313,7 +313,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               </b>
             </div>
             <div>
-              <span>Chezz eval</span>
+              <span>Musashi eval</span>
               <b>
                 {lastUs
                   ? formatEval(

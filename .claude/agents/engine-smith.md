@@ -1,6 +1,6 @@
 ---
 name: engine-smith
-description: Chess-engine developer who maps one game's objective errors onto the chezz Rust search/eval code and proposes specific, low-risk code changes ranked by expected Elo. Use after every ladder game (the analyze-game skill calls it).
+description: Chess-engine developer who maps one game's objective errors onto the Musashi Rust search/eval code and proposes specific, low-risk code changes ranked by expected Elo. Use after every ladder game (the analyze-game skill calls it).
 tools: Read, Grep, Glob
 model: haiku
 ---

@@ -11,7 +11,7 @@ use shakmaty::{CastlingMode, Chess, Color, Position};
 
 use search::{Engine, Limits, hash_of, uci};
 
-const NAME: &str = "chezz";
+const NAME: &str = "musashi";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 // Margin for thread joins and UCI round-trips so the wall-clock move time stays under the 5 s rule.
 const MOVE_OVERHEAD_MS: u64 = 150;

@@ -38,11 +38,11 @@ const LIVE_STALE_SEC = 90
 
 /** The runner's in-progress game, or an inactive state. A stale file (crashed runner) counts as inactive. */
 export async function loadLive(): Promise<LiveState> {
-  try {
-    const s: LiveState = await (await get('live.json')).json()
-    if (s.active && s.updatedAt && Date.now() / 1000 - s.updatedAt > LIVE_STALE_SEC) return { ...s, active: false }
-    return s
-  } catch {
-    return { active: false } as LiveState
-  }
+  const res = await fetch(`${import.meta.env.BASE_URL}games/live.json`, { cache: 'no-store' })
+  if (res.status === 404) return { active: false } as LiveState
+  // Other failures are transient (the runner is swapping the file): throw so callers keep the last state.
+  if (!res.ok) throw new Error(`live.json: ${res.status}`)
+  const s: LiveState = await res.json()
+  if (s.active && s.updatedAt && Date.now() / 1000 - s.updatedAt > LIVE_STALE_SEC) return { ...s, active: false }
+  return s
 }

@@ -10,7 +10,7 @@ import subprocess
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 GAMES = ROOT / "games"
 STOCKFISH = ROOT / "backend" / "tools" / "stockfish" / "stockfish" / "stockfish-windows-x86-64-universal.exe"
-ENGINE = ROOT / "backend" / "engine" / "target" / "release" / "chezz.exe"
+ENGINE = ROOT / "backend" / "engine" / "target" / "release" / "musashi.exe"
 PROGRESS = ROOT / "PROGRESS.md"
 
 # 1320-1500 were the warm-up; after that the ladder jumps to 2500 and climbs in 200-Elo steps

@@ -11,7 +11,11 @@ export function useLive(pollMs = POLL_MS): LiveState | null {
   const [live, setLive] = useState<LiveState | null>(null)
   useEffect(() => {
     let alive = true
-    const load = () => loadLive().then((s) => alive && setLive(s))
+    const load = () =>
+      loadLive().then(
+        (s) => alive && setLive(s),
+        () => {}, // transient read during a file swap: keep showing the last state
+      )
     load()
     const t = setInterval(load, pollMs)
     return () => {

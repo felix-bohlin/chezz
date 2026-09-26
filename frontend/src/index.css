@@ -101,6 +101,9 @@ button {
   align-items: center;
   gap: 10px;
 }
+.brand-war {
+  color: var(--gold);
+}
 .brand-mon {
   display: inline-grid;
   place-items: center;
@@ -611,6 +614,14 @@ button {
   color: var(--washi);
   text-shadow: 6px 6px 0 var(--vermilion), 12px 12px 0 var(--ink);
 }
+.hero-title-war {
+  display: block;
+  margin-top: 0.18em;
+  font-size: 0.34em;
+  letter-spacing: 0.5em;
+  color: var(--gold);
+  text-shadow: 3px 3px 0 var(--vermilion), 6px 6px 0 var(--ink);
+}
 .hero-sub {
   margin: 0 auto 22px;
   max-width: 560px;
@@ -969,6 +980,9 @@ button {
   }
   .app {
     padding: 12px 12px 24px;
+  }
+  .brand-war {
+    display: none;
   }
   .board-frame {
     padding: 10px 10px 22px 22px;

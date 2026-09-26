@@ -30,7 +30,7 @@ Shown for about 3 seconds before each game replay. It is built from the `GameRec
 ```
             THE NIGHT OF IGA
           ── Game 0007 ──
-  Tokugawa (chezz, White)  vs  Akechi's pursuers (Stockfish)
+  Tokugawa (Musashi, White)  vs  Akechi's pursuers (Stockfish)
         Strength of the pursuers: 1600
 ```
 
@@ -48,7 +48,7 @@ Shown after the final move's bubbles. They reuse the lords' `victory` / `defeat`
 | **We lose** | The *shikami-zō*: an ink portrait of Ieyasu's grimacing, defeated face | *The night was lost.* | "Paint me as I am. I will learn." |
 | **Draw** | Fog over the Iga mountains, no figures | *The mountains keep their secret.* | "Neither hunter nor hunted. For now." |
 
-The loss screen is based on a real story: after his defeat at Mikatagahara (1573), Ieyasu reportedly had his defeated face painted and kept the portrait as a reminder never to repeat his mistakes. A loss in chezz isn't hidden. It becomes a portrait of the lesson, which suits an engine that improves from its analyzed losses.
+The loss screen is based on a real story: after his defeat at Mikatagahara (1573), Ieyasu reportedly had his defeated face painted and kept the portrait as a reminder never to repeat his mistakes. A loss in Chezz: Total War isn't hidden. It becomes a portrait of the lesson, which suits an engine that improves from its analyzed losses.
 
 ## History vs legend (small info box on the intro screen)
 

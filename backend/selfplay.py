@@ -1,7 +1,7 @@
 """Fast regression check: candidate engine vs baseline engine at a short time control.
 
 Usage:
-    python backend/selfplay.py --baseline backend/engine/baseline/chezz.exe [--games 16] [--time 0.1]
+    python backend/selfplay.py --baseline backend/engine/baseline/musashi.exe [--games 16] [--time 0.1]
 
 Plays each opening from both sides. Prints the candidate's score; exit code 1 if it scores
 below --min (default 0.40), which the ladder-cycle skill treats as "revert the change".

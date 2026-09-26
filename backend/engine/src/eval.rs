@@ -15,6 +15,9 @@ const PASSED_EG: [i32; 8] = [0, 5, 10, 20, 40, 70, 110, 0];
 const PASSED_KING_THEM: i32 = 4;
 const PASSED_KING_US: i32 = 2;
 const PASSED_KING_W: [i32; 8] = [0, 0, 0, 1, 2, 3, 4, 0];
+// Unsupported advanced pawn with an enemy piece on its stop square.
+const ADV_BLOCKED_MG: [i32; 8] = [0, 0, 0, 0, 10, 25, 40, 0];
+const ADV_BLOCKED_EG: [i32; 8] = [0, 0, 0, 0, 5, 12, 20, 0];
 const DOUBLED: (i32, i32) = (10, 20);
 const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
@@ -292,12 +295,24 @@ pub fn evaluate(pos: &Chess) -> i32 {
                 let f = s % 8;
                 let att = match role {
                     Role::Pawn => {
+                        let rel = if us == 0 { s / 8 } else { 7 - s / 8 };
+                        let stop = if us == 0 { s + 8 } else { s.wrapping_sub(8) };
+                        let blocked = stop < 64 && b.by_color(color.other()).contains(Square::new(stop as u32));
+                        // An advanced pawn stopped by an enemy piece and without pawn support is a target,
+                        // not an asset (game 9: e6 blockaded by Be7, we thought +141, reality -199).
+                        if blocked && rel >= 4 && pawn_att[us] & (1u64 << s) == 0 {
+                            mg[us] -= ADV_BLOCKED_MG[rel];
+                            eg[us] -= ADV_BLOCKED_EG[rel];
+                        }
                         if m.passed[us][s] & pawns[them] == 0 {
-                            let rel = if us == 0 { s / 8 } else { 7 - s / 8 };
-                            mg[us] += PASSED_MG[rel];
-                            eg[us] += PASSED_EG[rel];
+                            let (pmg, peg) = if blocked {
+                                (PASSED_MG[rel] / 2, PASSED_EG[rel] / 2)
+                            } else {
+                                (PASSED_MG[rel], PASSED_EG[rel])
+                            };
+                            mg[us] += pmg;
+                            eg[us] += peg;
                             // Kings racing to the pawn's stop square decide passed-pawn endgames.
-                            let stop = if us == 0 { s + 8 } else { s.wrapping_sub(8) };
                             if rel >= 3 && stop < 64 {
                                 let stop_sq = Square::new(stop as u32);
                                 let d_them = king_sq[them].map_or(7, |k| k.distance(stop_sq) as i32);

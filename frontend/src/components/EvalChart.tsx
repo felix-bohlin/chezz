@@ -33,12 +33,12 @@ function leaderText(p: Point, ourColor: 'white' | 'black'): { text: string; who:
   const mateUs = p.mate === null ? null : p.mate * sign
   if (mateUs !== null) {
     return mateUs > 0
-      ? { text: `Chezz sees mate in ${mateUs}`, who: 'us' }
+      ? { text: `Musashi sees mate in ${mateUs}`, who: 'us' }
       : { text: `Stockfish has mate in ${-mateUs}`, who: 'them' }
   }
   if (Math.abs(us) < EVEN_CP) return { text: 'Even position', who: 'even' }
   const pawns = (Math.abs(us) / 100).toFixed(2)
-  return us > 0 ? { text: `Chezz ahead · +${pawns}`, who: 'us' } : { text: `Stockfish ahead · +${pawns}`, who: 'them' }
+  return us > 0 ? { text: `Musashi ahead · +${pawns}`, who: 'us' } : { text: `Stockfish ahead · +${pawns}`, who: 'them' }
 }
 
 export function EvalChart({ moves, ply, ourColor, onSeek }: Props) {
@@ -46,8 +46,8 @@ export function EvalChart({ moves, ply, ourColor, onSeek }: Props) {
   const series = ourSeries(moves)
   const current = ply > 0 ? series[ply - 1] : { cp: 0, mate: null }
   const leader = leaderText(current, ourColor)
-  const whiteName = ourColor === 'white' ? 'Chezz' : 'Stockfish'
-  const blackName = ourColor === 'white' ? 'Stockfish' : 'Chezz'
+  const whiteName = ourColor === 'white' ? 'Musashi' : 'Stockfish'
+  const blackName = ourColor === 'white' ? 'Stockfish' : 'Musashi'
 
   return (
     <div className="eval-chart">

@@ -1,6 +1,6 @@
 ---
 name: analyze-game
-description: Analyze one finished chezz-vs-Stockfish game - full-strength Stockfish post-mortem plus the shogun-sensei and engine-smith sub-agents - and write games/<game>.analysis.md with ranked engine improvements. Use after every ladder game. Argument - a game file path; defaults to the newest game.
+description: Analyze one finished Musashi-vs-Stockfish game - full-strength Stockfish post-mortem plus the shogun-sensei and engine-smith sub-agents - and write games/<game>.analysis.md with ranked engine improvements. Use after every ladder game. Argument - a game file path; defaults to the newest game.
 ---
 
 # Analyze a ladder game
@@ -37,7 +37,7 @@ Required by the competition rules after **every** game: this skill + two differe
 
 5. **Write `games/<STEM>.analysis.md`:**
    ```markdown
-   # Game <id> — chezz <version> vs Stockfish UCI_Elo <elo>: <result> (<winner>)
+   # Game <id> — Musashi <version> vs Stockfish UCI_Elo <elo>: <result> (<winner>)
 
    <REPORT>
 
