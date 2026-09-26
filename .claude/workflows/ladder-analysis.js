@@ -65,7 +65,7 @@ const ANALYSTS = [
   {
     type: 'shogun-sensei',
     label: 'shogun-sensei',
-    focus: 'Name the chess reasons we lost points and the chess knowledge the engine is missing. Describe tactics precisely — check whose move each line is from the FEN side-to-move field before explaining a tactic.',
+    focus: 'Review as a world-class chess expert modelled on Magnus Carlsen\'s playing strength. Name the chess reasons we lost points and the chess knowledge the engine is missing. Describe tactics precisely — check whose move each line is from the FEN side-to-move field before explaining a tactic.',
   },
   {
     type: 'engine-smith',

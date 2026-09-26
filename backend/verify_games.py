@@ -19,7 +19,7 @@ import sys
 import chess
 import chess.pgn
 
-from common import load_games
+from common import GAMES, load_games
 
 MOVE_LIMIT_MS = 5000
 # Anything slower leaves less than 150 ms between us and a breach: reported, so regressions show early.
@@ -89,6 +89,7 @@ def verify(g: dict) -> tuple[list[str], list[str]]:
 def main() -> None:
     games = load_games()
     failed = 0
+    unanalyzed = 0
     for g in games:
         errors, warnings = verify(g)
         status = "FAIL" if errors else "ok"
@@ -98,7 +99,14 @@ def main() -> None:
         for w in warnings:
             print(f"     warning: {w}")
         failed += bool(errors)
-    print(f"VERIFY {len(games)} games, {failed} failed")
+        # Competition rule: every game is analyzed afterwards (analyze-game skill + both sub-agents).
+        analysis = GAMES / g["_file"].replace(".json", ".analysis.md")
+        if not analysis.exists():
+            print(f"     warning: no {analysis.name} yet: run the analyze-game skill")
+            unanalyzed += 1
+        elif "sensei-moves" not in analysis.read_text(encoding="utf-8"):
+            print(f"     warning: {analysis.name} has no sensei-moves block: analyze.py --annotate")
+    print(f"VERIFY {len(games)} games, {failed} failed, {unanalyzed} without analysis")
     sys.exit(1 if failed else 0)
 
 

@@ -152,6 +152,8 @@ pub struct Searcher {
     counter: Vec<u16>,
     /// Encoded move played at each ply of the current line (0 = null move).
     move_stack: [u16; MAX_PLY],
+    /// Static eval at each ply of the current line (-INF when in check), for the improving flag.
+    eval_stack: [i32; MAX_PLY],
     history: Vec<[[i32; 64]; 64]>,
     hist: Vec<u64>,
     pv: Vec<[Option<Move>; MAX_PLY]>,
@@ -180,6 +182,7 @@ impl Searcher {
             killers: [[0; 2]; MAX_PLY],
             counter: vec![0; 4096],
             move_stack: [0; MAX_PLY],
+            eval_stack: [-INF; MAX_PLY],
             history: vec![[[0; 64]; 64]; 2],
             hist: Vec::with_capacity(1024),
             pv: vec![[None; MAX_PLY]; MAX_PLY],
@@ -505,9 +508,13 @@ impl Searcher {
         }
 
         let static_eval = if in_check { -INF } else { evaluate(pos) };
+        self.eval_stack[ply] = static_eval;
+        // Improving: our static eval is higher than on our previous move (two plies up).
+        let improving =
+            !in_check && (ply < 2 || self.eval_stack[ply - 2] == -INF || static_eval > self.eval_stack[ply - 2]);
 
         if !pv_node && !in_check {
-            if depth <= 6 && static_eval - 80 * depth >= beta && beta.abs() < MATE_BOUND {
+            if depth <= 6 && static_eval - 80 * (depth - improving as i32) >= beta && beta.abs() < MATE_BOUND {
                 return static_eval;
             }
             if can_null && depth >= 3 && static_eval >= beta && has_non_pawn(pos) {
@@ -562,7 +569,8 @@ impl Searcher {
             let is_killer = self.killers[ply][0] == enc(&m) || self.killers[ply][1] == enc(&m);
 
             if !pv_node && !in_check && quiet && searched > 0 && best > -MATE_BOUND {
-                if depth <= 4 && searched >= 4 + (depth * depth) as usize * 2 {
+                let lmp_count = (4 + (depth * depth) as usize * 2) / if improving { 1 } else { 2 };
+                if depth <= 4 && searched >= lmp_count {
                     continue;
                 }
             }

@@ -183,7 +183,7 @@
     {
       "id": "0013",
       "file": "0013_elo-3100_draw.json",
-      "analysis": null,
+      "analysis": "0013_elo-3100_draw.analysis.md",
       "date": "2026-09-26T08:16:54Z",
       "stockfishElo": 3100,
       "ourColor": "white",
@@ -192,6 +192,20 @@
       "termination": "threefold_repetition",
       "plies": 97,
       "engineVersion": "0.1.12",
+      "ourMaxMoveMs": 4706
+    },
+    {
+      "id": "0014",
+      "file": "0014_elo-3100_loss.json",
+      "analysis": null,
+      "date": "2026-09-26T08:28:33Z",
+      "stockfishElo": 3100,
+      "ourColor": "black",
+      "result": "1-0",
+      "winner": "stockfish",
+      "termination": "checkmate",
+      "plies": 175,
+      "engineVersion": "0.1.13",
       "ourMaxMoveMs": 4706
     }
   ]

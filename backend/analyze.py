@@ -18,6 +18,7 @@ import argparse
 import json
 import pathlib
 import re
+import sys
 
 import chess
 import chess.engine
@@ -108,6 +109,7 @@ def main() -> None:
     ap.add_argument("--top", type=int, default=8)
     ap.add_argument("--annotate", action="store_true", help="write the sensei-moves block into the .analysis.md")
     args = ap.parse_args()
+    sys.stdout.reconfigure(encoding="utf-8")  # the report prints → etc.; the Windows console codec is cp1252
 
     path = pathlib.Path(args.game)
     if not path.is_absolute() and not path.exists():
