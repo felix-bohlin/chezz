@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { LiveState } from '../lib/data'
 import { japanMap, provincesFor } from '../pixel/japan'
 import type { Manifest } from '../types/game'
@@ -75,7 +76,7 @@ export function Dojo({ manifest, live, onOpen, map }: Props) {
         </a>
       )}
 
-      <section className="campaign war-table" aria-label="Campaign map">
+      <section className="campaign war-table" aria-label="Campaign map" style={{ '--ar': japan.w / japan.h } as CSSProperties}>
         <button className="japan-open" onClick={() => openWarMap()} aria-label="Open the full-screen campaign map">
           <JapanBoard castles={castles} />
           <span className="japan-open-hint">⛶ Open the war map</span>

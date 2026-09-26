@@ -696,6 +696,15 @@ button {
     linear-gradient(var(--iron), var(--iron)) right bottom / 20px 32px;
   background-repeat: no-repeat;
 }
+/* The frame hugs the map, and the map is never taller than ~62% of the screen. */
+.war-table {
+  width: min(100%, calc(62vh * var(--ar) + 40px + 2 * var(--px)));
+  margin-inline: auto;
+}
+.war-table .japan,
+.war-table .japan-open {
+  max-width: none;
+}
 .war-table .japan {
   border-color: var(--ink);
   box-shadow: 0 0 0 3px var(--wood-dark), 6px 6px 0 rgba(10, 6, 16, 0.45);
