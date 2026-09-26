@@ -24,6 +24,10 @@ from common import ENGINE, GAMES, STOCKFISH, git_commit, load_games, next_game_i
 from verify_games import NEAR_MISS_MS, verify
 
 MOVE_TIME = 5.0  # seconds per move, both players (competition rule)
+# Only a win advances the ladder, so a draw is worth no more than a loss. With the engine's default
+# contempt (25 cp) it steered into a repetition at an own eval of -0.33..-0.40 (game 13); at 60 it only
+# accepts a repetition when it believes it is more than 0.6 pawns worse.
+LADDER_CONTEMPT = 60
 EVAL_CLAMP = 2000
 LIVE = GAMES / "live.json"
 
@@ -83,6 +87,8 @@ def sf_play(sf: chess.engine.SimpleEngine, board: chess.Board) -> chess.engine.P
 
 def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
     ours = chess.engine.SimpleEngine.popen_uci(str(ENGINE))
+    if "Contempt" in ours.options:
+        ours.configure({"Contempt": LADDER_CONTEMPT})
     sf = chess.engine.SimpleEngine.popen_uci(str(STOCKFISH))
     sf.configure({"UCI_LimitStrength": True, "UCI_Elo": elo})
     sf_version = sf.id.get("name", "Stockfish")
@@ -230,7 +236,7 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         "result": result,
         "winner": winner,
         "termination": termination,
-        "engine": {"name": "musashi", "version": version, "commit": git_commit()},
+        "engine": {"name": "musashi", "version": version, "commit": git_commit(), "contempt": LADDER_CONTEMPT},
         "startFen": chess.STARTING_FEN,
         "ourMaxMoveMs": max((m["timeMs"] for m in moves if m["by"] == "us"), default=0),
         "timeViolations": violations,
