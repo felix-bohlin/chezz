@@ -33,8 +33,9 @@ function painter(ctx: Ctx) {
     }
   }
   /** Draw an army sprite; `silhouette` paints every pixel one color, `flip` mirrors it. */
-  const sprite = (type: PieceType, army: Army, x: number, y: number, opts: { flip?: boolean; silhouette?: string } = {}) => {
-    SPRITES[type].forEach((row, sy) => {
+  const sprite = (type: PieceType | string[], army: Army, x: number, y: number, opts: { flip?: boolean; silhouette?: string } = {}) => {
+    const rows = typeof type === 'string' ? SPRITES[type] : type
+    rows.forEach((row, sy) => {
       for (let sx = 0; sx < SPRITE_SIZE; sx++) {
         const c = colorFor(row[sx], army)
         if (!c) continue
@@ -59,6 +60,30 @@ function painter(ctx: Ctx) {
   }
   return { px, bands, sprite, disc, ridge, banner }
 }
+
+// The knights ride horses on the board; in the trees of the oath panel the ninja are on foot.
+const NINJA_ON_FOOT = [
+  '....................',
+  '....................',
+  '..................o.',
+  '.................mo.',
+  '................mn..',
+  '.......oooo....mn...',
+  '..rrrrorrrro..mn....',
+  '.rr...okekeo.mn.....',
+  '......oaaaaomn......',
+  '.....oobbbborr......',
+  '....obaaaaasso......',
+  '....obaacaabo.......',
+  '....okkkkkkko.......',
+  '....obaacaabo.......',
+  '....obaaaaabo.......',
+  '...obaao.oaabo......',
+  '...obao...oabo......',
+  '..obao.....oabo.....',
+  '..okko.....okko.....',
+  '.ooooo.....ooooo....',
+]
 
 const PAINT: Record<PanelArt, (ctx: Ctx) => void> = {
   // 1. Sakai at dawn: port town, merchant ships, Ieyasu with a small retinue.
@@ -185,7 +210,7 @@ const PAINT: Record<PanelArt, (ctx: Ctx) => void> = {
     }
     // ninja in the branches, eyes catching the moon
     for (const [x, y] of [[20, 8], [140, 20], [2, 30]]) {
-      sprite('n', 'w', x, y, { silhouette: '#05080d', flip: x > 80 })
+      sprite(NINJA_ON_FOOT, 'w', x, y, { silhouette: '#05080d', flip: x > 80 })
       px(x + (x > 80 ? 7 : 11), y + 5, 1, 1, '#e9e4cf')
     }
     // Hanzō kneeling (set lower), Ieyasu facing him
