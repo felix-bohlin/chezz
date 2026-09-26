@@ -4,7 +4,8 @@ import { gameAudio, getSettings, isMusicPlaying, setSettings, stopMusic } from '
 import { loadAnalysis, loadGame } from '../lib/data'
 import { START_FEN, sideToMove } from '../lib/fen'
 import { spriteUrl } from '../pixel/render'
-import { buildStory, type PlyStory } from '../story/dialogue'
+import { buildEnding, buildStory, type PlyStory } from '../story/dialogue'
+import { ENDING_TITLE } from '../story/intro'
 import type { Bubble, DisplayMode } from '../story/types'
 import type { GameRecord, ManifestEntry } from '../types/game'
 import { Board } from './Board'
@@ -24,6 +25,8 @@ const BUBBLE_MODES: { mode: DisplayMode; label: string }[] = [
   { mode: 'all', label: 'All' },
 ]
 const BUBBLE_MODE_KEY = 'chezz.bubbles'
+/** The battle's title card holds the stage this long before the lords start talking. */
+const TITLE_CARD_MS = 5000
 
 function loadBubbleMode(): DisplayMode {
   try {
@@ -97,9 +100,12 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const moveListRef = useRef<HTMLOListElement>(null)
   const prevTotal = useRef(game.moves.length)
   const audioPly = useRef(initialPly)
+  // Title card (docs/story/01): shown when a finished game is opened from the start.
+  const [titleCard, setTitleCard] = useState(!live && initialPly === 0 && game.moves.length > 0)
 
   const total = game.moves.length
   const story = useMemo(() => buildStory(game), [game])
+  const ending = useMemo(() => buildEnding(game), [game])
   const bubbles = useMemo(() => {
     const all = story[ply]?.bubbles ?? []
     return bubbleMode === 'off' ? [] : bubbleMode === 'key' ? all.filter((b) => b.key) : all
@@ -135,6 +141,14 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   }, [ply, story, total, live, game.winner])
 
   useEffect(() => stopMusic, [])
+
+  // Hidden as soon as the replay moves, or after a few seconds.
+  const showTitleCard = titleCard && ply === 0
+  useEffect(() => {
+    if (!titleCard) return
+    const t = setTimeout(() => setTitleCard(false), TITLE_CARD_MS)
+    return () => clearTimeout(t)
+  }, [titleCard])
 
   useEffect(() => {
     if (live && total !== prevTotal.current) {
@@ -229,11 +243,39 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       <section className="replay-main">
         {theirs}
         <div className="board-wrap">
-          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={bubbles} />
+          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} />
+          {showTitleCard && (
+            <button className="title-card" onClick={() => setTitleCard(false)} aria-label="Dismiss title card">
+              <span className="title-card-kicker">伊賀越え · The Night of Iga</span>
+              <span className="title-card-game">── Battle #{game.id} ──</span>
+              <span className="title-card-sides">
+                <span className="title-card-side">
+                  Tokugawa<small>chezz · {game.ourColor}</small>
+                </span>
+                <span className="title-card-vs">vs</span>
+                <span className="title-card-side">
+                  Akechi’s pursuers<small>Stockfish</small>
+                </span>
+              </span>
+              <span className="title-card-elo">Strength of the pursuers: {game.stockfishElo}</span>
+            </button>
+          )}
           {!live && ply === total && total > 0 && (
             <div className={`result-banner result-${game.winner}`}>
+              {game.winner === 'stockfish' && (
+                <figure className="shikami">
+                  <img src={spriteUrl('k', ourArmy)} alt="Ink portrait of the defeated Ieyasu" />
+                  <figcaption>顰像 shikami-zō</figcaption>
+                </figure>
+              )}
               <div className="result-kanji">{outcome.kanji}</div>
               <div className="result-word">{outcome.word}</div>
+              <div className="result-title">{ENDING_TITLE[game.winner]}</div>
+              {ending.map((l) => (
+                <p key={l.side} className={`result-line side-${l.side}`}>
+                  <span className="result-line-who">{l.who}</span> “{l.text}”
+                </p>
+              ))}
               <div className="result-detail">
                 {game.result} · {game.termination}
               </div>

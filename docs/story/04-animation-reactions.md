@@ -29,7 +29,7 @@ Implementation hint: a single `motionProfile(role, side)` returns `{ durationPer
 | **lord** | Slow walk with a banner-bearer following half a step behind | Never hurries, even when escaping check (the tension comes from the red glow, not speed) |
 | **commander – Hanzō** | Dissolves into black smoke → reappears at the target in a crouch → stands | The only piece that teleports; it makes the queen feel supernatural |
 | **commander – Hidemitsu** | Heavy armored march, sword drawn on captures | Mirrors the Tokugawa riders' weight |
-| **ninja** | Crouch → somersault over any piece in the way → silent landing | The knight's L-jump becomes the ninja's leap; the "jumping over pieces" rule is now character |
+| **ninja** | The horse rears, then leaps over any piece in the way and lands silently, in a puff of smoke | The knight's L-jump becomes a mounted leap; the "jumping over pieces" rule is now character |
 | **monk** | Glides along the diagonal, robes and prayer beads swaying, staff held level | Almost no bob; it should feel like floating |
 | **rider** | Gallop along the file or rank; the horse rears on long moves (≥4 squares) | Dust trail along the path |
 | **ashigaru** | Nervous jog, spear bobbing; double-step (2 squares) is a hurried scramble | Glances left and right on arrival |

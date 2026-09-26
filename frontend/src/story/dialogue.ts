@@ -331,11 +331,42 @@ function fill(text: string, speakerSide: Side, target: Speech['target'], square:
 
 // ── public API ─────────────────────────────────────────────────────────────
 
-/** Compute the story for every ply of a game, forward from ply 0 (03 §1). Index = ply. */
-export function buildStory(game: GameRecord): PlyStory[] {
+function assignSides(game: GameRecord): Color {
   sideColor.tokugawa = game.ourColor === 'white' ? 'w' : 'b'
   sideColor.akechi = other(sideColor.tokugawa)
-  const us = sideColor.tokugawa
+  return sideColor.tokugawa
+}
+
+export interface EndingLine {
+  side: Side
+  who: string
+  text: string
+  mood: DialogueLine['mood']
+}
+
+/** The two lords' closing lines for the end screen (01 §End screens): winner first, or Tokugawa first on a draw. */
+export function buildEnding(game: GameRecord): EndingLine[] {
+  assignSides(game)
+  const fen = game.moves.at(-1)?.fenAfter ?? game.startFen
+  const pos = new Chess(fen, { skipValidation: true })
+  const say = (side: Side, situation: Situation): EndingLine | null => {
+    const color = sideColor[side]
+    const ctx: PickContext = { fen, ply: game.moves.length, phase: phaseOf(pos), material: materialState(material(pos, color)) }
+    const picked = pickLine(side, 'lord', situation, ctx, new Set())
+    return picked && { side, who: DISPLAY_NAME[side].lord, text: fill(picked.line.text, side, undefined, kingSq(pos, color) ?? ''), mood: picked.line.mood }
+  }
+  const lines =
+    game.winner === 'us'
+      ? [say('tokugawa', 'victory'), say('akechi', 'defeat')]
+      : game.winner === 'stockfish'
+        ? [say('akechi', 'victory'), say('tokugawa', 'defeat')]
+        : [say('tokugawa', 'draw'), say('akechi', 'draw')]
+  return lines.filter((l): l is EndingLine => l !== null)
+}
+
+/** Compute the story for every ply of a game, forward from ply 0 (03 §1). Index = ply. */
+export function buildStory(game: GameRecord): PlyStory[] {
+  const us = assignSides(game)
 
   const raw = [0, ...game.moves.map((m) => (m.mate == null ? (m.evalCp ?? undefined) : undefined))]
   // Stockfish sometimes reports exactly 0 in clearly decided positions; a 0 next to a big eval is noise.

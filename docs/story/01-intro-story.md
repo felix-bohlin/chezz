@@ -1,5 +1,7 @@
 # 01 — Intro story
 
+**Status: implemented.** See `frontend/src/components/IntroScroll.tsx`, `frontend/src/pixel/intro.ts` (the panel paintings, which reuse the army sprites) and `frontend/src/story/intro.ts` (the text). The title card and end screens are in `Replay.tsx`. Panel art is pixel art drawn in code, not sumi-e paintings, to match the frontend's style.
+
 The intro answers one question for the viewer: **why is this match being played?**
 Answer: to get Lord Ieyasu home alive, the same goal as protecting the king in chess.
 

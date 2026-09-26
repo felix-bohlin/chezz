@@ -46,7 +46,7 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 - **Personality:** playful, cocky, fast. They enjoy this too much.
 - **Voice:** short, teasing, with sly jokes. Mock the enemy, especially the rival Kōka ninja.
 - **Signature lines:** "Two birds. One stone. Zero witnesses." / "Where am I? Exactly."
-- **Look:** unarmored, dark indigo cloth, crouched stance, a short blade on the back.
+- **Look:** rides a brown horse, like the chess knight. Unarmored, with a flying gold headband, a katana raised high, and a clan-colored saddle cloth (sprite `n` in `frontend/src/pixel/sprites.ts`). In the intro's oath panel they appear on foot, hiding in the trees.
 
 ### Yamabushi — `monk` (Bishop)
 - **Personality:** serene mountain ascetics who fight when they must. They find everything slightly funny in a cosmic way.
@@ -86,7 +86,7 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 - **Personality:** rival ninja from the neighboring province, contemptuous of Iga.
 - **Voice:** sly and superior, mocking Iga as "predictable" and "tired".
 - **Signature lines:** "Iga is so predictable." / "Kōka sees everything."
-- **Look:** grey-green cloth, a straw raincoat, a blowpipe.
+- **Look:** the same mounted-ninja sprite in Akechi red.
 
 ### Warrior monks — `monk` (Bishop)
 - **Personality:** zealous and grim. They remember Nobunaga burning Mount Hiei (1571) and are glad he is dead.
