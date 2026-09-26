@@ -268,12 +268,12 @@ button {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(224, 177, 60, 0.28);
-  box-shadow: inset 0 0 0 3px rgba(224, 177, 60, 0.9);
+  background: rgba(224, 177, 60, 0.3);
+  box-shadow: inset 0 0 0 4px var(--gold), inset 0 0 0 6px rgba(26, 18, 32, 0.35);
 }
 .square.sq-from::after {
-  background: rgba(224, 177, 60, 0.14);
-  box-shadow: inset 0 0 0 3px rgba(224, 177, 60, 0.5);
+  background: rgba(224, 177, 60, 0.16);
+  box-shadow: inset 0 0 0 3px rgba(224, 177, 60, 0.75);
 }
 .square.sq-check::before {
   content: '';
@@ -3068,4 +3068,29 @@ html:has(dialog.warmap[open]) {
   .warmap:has(.province-drawer[open]) .warmap-stage {
     padding-right: 500px;
   }
+}
+
+/* ---------- Piece contrast: ink rim + contact shadow ---------- */
+/* A dark rim separates every piece from both squares (and doesn't rely on red vs green). */
+.piece:not(.dying) .sprite {
+  filter:
+    drop-shadow(1px 0 0 var(--ink))
+    drop-shadow(-1px 0 0 var(--ink))
+    drop-shadow(0 1px 0 var(--ink))
+    drop-shadow(0 -1px 0 var(--ink))
+    drop-shadow(2px 3px 0 rgba(20, 12, 30, 0.35));
+}
+/* Pieces stand on the board rather than being printed on it. */
+.piece:not(.dying)::before {
+  content: '';
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 5%;
+  height: 12%;
+  border-radius: 50%;
+  background: rgba(20, 12, 30, 0.38);
+}
+.piece:not(.dying) .gesture {
+  position: relative;
 }
