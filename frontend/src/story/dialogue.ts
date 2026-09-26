@@ -33,11 +33,11 @@ export interface PlyStory {
   kingInDanger: boolean
 }
 
-const V: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }
+export const V: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }
 const RECENT_PLIES = 10
 const DANGER_PRESSURE = 3
 
-interface Placed {
+export interface Placed {
   sq: Square
   type: PieceSymbol
   color: Color
@@ -60,7 +60,7 @@ interface Detected {
 
 const other = (c: Color): Color => (c === 'w' ? 'b' : 'w')
 
-function pieces(pos: Chess, color?: Color): Placed[] {
+export function pieces(pos: Chess, color?: Color): Placed[] {
   const out: Placed[] = []
   for (const row of pos.board()) {
     for (const p of row) if (p && (!color || p.color === color)) out.push({ sq: p.square, type: p.type, color: p.color })
@@ -68,21 +68,21 @@ function pieces(pos: Chess, color?: Color): Placed[] {
   return out
 }
 
-function kingSq(pos: Chess, color: Color): Square {
+export function kingSq(pos: Chess, color: Color): Square {
   return pos.findPiece({ type: 'k', color })[0]
 }
 
 const mostValuable = (list: Placed[]) => list.reduce<Placed | undefined>((a, b) => (!a || V[b.type] > V[a.type] ? b : a), undefined)
 
 /** Pieces of `color` (value ≥3, not king) attacked by the enemy and not defended. */
-function hanging(pos: Chess, color: Color): Placed[] {
+export function hanging(pos: Chess, color: Color): Placed[] {
   return pieces(pos, color).filter(
     (p) => p.type !== 'k' && V[p.type] >= 3 && pos.attackers(p.sq, other(color)).length > 0 && pos.attackers(p.sq, color).length === 0,
   )
 }
 
 /** Pieces of `color` absolutely pinned to their king. */
-function pinned(pos: Chess, color: Color): Placed[] {
+export function pinned(pos: Chess, color: Color): Placed[] {
   const king = kingSq(pos, color)
   if (!king || pos.isAttacked(king, other(color))) return []
   return pieces(pos, color).filter((p) => {

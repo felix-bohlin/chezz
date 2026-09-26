@@ -40,7 +40,7 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 - **Personality:** cold, efficient, loyal to the bone. The most dangerous piece on the board, and he knows it.
 - **Voice:** the fewest words of anyone, often three or fewer. Sometimes only "...". Never explains himself and never raises his voice.
 - **Signature lines:** "Silence is the sharpest blade." / "You never heard me." / "Two throats. One blade."
-- **Look:** dark armor with a demon-mask menpō and a spear (Hanzō was famous for his spear). Faint smoke trails him.
+- **Look:** the Demon: a black horned oni helmet, a black mask with glowing gold eyes and white fangs, and twin katanas crossed on his back, whose hilts and tips form an X around him. No other piece has that shape, so he stands out from the spear-carrying ashigaru and the gold-crested king (sprite `q`). He vanishes in smoke when he moves.
 
 ### Iga ninja — `ninja` (Knight)
 - **Personality:** playful, cocky, fast. They enjoy this too much.
@@ -80,7 +80,7 @@ The ids, armor classes and display names are defined in [`types.ts`](../../front
 - **Personality:** Mitsuhide's loyal and ruthless general. A professional hunter.
 - **Voice:** clipped and sarcastic. Treats the Tokugawa as prey.
 - **Signature lines:** "Found you, old fox." / "Next." / "Careless. Iga has grown soft."
-- **Look:** ornate armor with a horned helmet and a long *nodachi* sword.
+- **Look:** the same horned oni sprite with crossed katanas, in Akechi red.
 
 ### Kōka scouts — `ninja` (Knight)
 - **Personality:** rival ninja from the neighboring province, contemptuous of Iga.

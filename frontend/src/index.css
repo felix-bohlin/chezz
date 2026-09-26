@@ -298,8 +298,8 @@ button {
   pointer-events: none;
 }
 .sprite {
-  width: 86%;
-  height: 86%;
+  width: 94%;
+  height: 94%;
   filter: drop-shadow(2px 3px 0 rgba(20, 12, 30, 0.45));
   animation: hop 340ms ease-out, bob 1.6s steps(2) infinite;
 }
@@ -2140,5 +2140,241 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .kn-slide {
     animation: none;
+  }
+}
+
+/* ---------- Piece reactions (docs/story/04-animation-reactions.md) ---------- */
+.gesture {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* §4 Mood → gesture: the speaker acts out its line */
+.gesture-calm { animation: g-nod 700ms steps(4) both; }
+.gesture-sly { animation: g-tilt 800ms steps(4) both; }
+.gesture-proud { animation: g-proud 900ms steps(4) both; }
+.gesture-fear { animation: g-fear 800ms steps(8) both; }
+.gesture-anger { animation: g-stamp 700ms steps(5) both; }
+.gesture-triumph { animation: g-triumph 900ms steps(6) both; }
+.gesture-grief { animation: g-grief 1000ms steps(4) both; }
+.gesture-reply { animation-delay: 600ms; }
+@keyframes g-nod {
+  40% { transform: translateY(6%); }
+}
+@keyframes g-tilt {
+  30% { transform: rotate(-9deg); }
+  65% { transform: rotate(7deg); }
+}
+@keyframes g-proud {
+  35%, 75% { transform: translateY(-8%) scale(1.1); }
+}
+@keyframes g-fear {
+  15% { transform: translateX(-6%); }
+  30% { transform: translateX(-3%); }
+  45% { transform: translateX(-7%); }
+  60% { transform: translateX(-4%); }
+  80% { transform: translateX(-6%); }
+}
+@keyframes g-stamp {
+  30% { transform: translateY(-14%); }
+  55% { transform: translateY(4%) scaleY(0.92); }
+  75% { transform: translateX(3%); }
+}
+@keyframes g-triumph {
+  20%, 60% { transform: translateY(-26%); }
+  40%, 80% { transform: translateY(0); }
+}
+@keyframes g-grief {
+  40%, 85% { transform: translateY(8%) scaleY(0.9); filter: grayscale(0.7) brightness(0.85); }
+}
+
+/* §3 Idle reactions to the position */
+.gesture.face-left { scale: -1 1; }
+.piece.tremble { animation: tremble 0.32s steps(2) infinite; }
+@keyframes tremble {
+  50% { translate: 1px 0; }
+}
+.gesture.glint {
+  scale: 1 1.06;
+  filter: drop-shadow(0 0 2px #ffd45a) drop-shadow(0 0 4px rgba(224, 177, 60, 0.8));
+}
+.gesture.glint.face-left { scale: -1 1.06; }
+.square.sq-hanging::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 3px var(--vermilion);
+  animation: hanging-pulse 0.9s steps(2) infinite;
+  z-index: 1;
+}
+@keyframes hanging-pulse {
+  50% { box-shadow: inset 0 0 0 3px rgba(210, 60, 42, 0.25); }
+}
+.pin-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.pin-lines line {
+  stroke: var(--ink);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.22 0.12;
+  stroke-linecap: square;
+  opacity: 0.85;
+  animation: ink-draw 600ms steps(6) both;
+}
+@keyframes ink-draw {
+  from { stroke-dasharray: 0 1; }
+}
+
+/* §2 Move signatures */
+.piece.fx-vanish {
+  transition: none;
+}
+.piece.fx-vanish .sprite {
+  animation: reappear 520ms steps(4) both, bob 1.6s steps(2) 520ms infinite;
+}
+@keyframes reappear {
+  0%, 35% { opacity: 0; transform: translateY(8%) scale(0.7); }
+  100% { opacity: 1; transform: none; }
+}
+.piece.fx-leap .sprite {
+  animation: leap 380ms ease-out, bob 1.6s steps(2) 380ms infinite;
+}
+@keyframes leap {
+  0% { transform: translateY(0) rotate(0); }
+  20% { transform: translateY(-10%) rotate(-10deg); }
+  50% { transform: translateY(-48%) rotate(-4deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+.fx-smoke {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sq);
+  height: var(--sq);
+  z-index: 3;
+  pointer-events: none;
+}
+.fx-smoke::before,
+.fx-smoke::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 22%;
+  height: 22%;
+  background: #cfc6d6;
+  box-shadow:
+    calc(var(--sq) * -0.18) calc(var(--sq) * -0.06) 0 #e6dfe9,
+    calc(var(--sq) * 0.16) calc(var(--sq) * -0.1) 0 #b8adc2,
+    calc(var(--sq) * -0.08) calc(var(--sq) * 0.12) 0 #a99dbb,
+    calc(var(--sq) * 0.12) calc(var(--sq) * 0.1) 0 #e6dfe9;
+  animation: smoke 700ms steps(5) forwards;
+}
+.fx-smoke::after {
+  background: #9d90ae;
+  animation-delay: 90ms;
+  top: 40%;
+}
+.fx-smoke.small::before,
+.fx-smoke.small::after {
+  top: 78%;
+  width: 14%;
+  height: 14%;
+}
+@keyframes smoke {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -110%) scale(1.8); }
+}
+.piece.fx-promote .sprite {
+  animation: promote 800ms steps(6) both, bob 1.6s steps(2) 800ms infinite;
+}
+@keyframes promote {
+  0% { transform: scaleX(0.1); filter: brightness(3) sepia(1); }
+  40% { transform: scaleX(1) translateY(-18%); filter: brightness(2); }
+  100% { transform: none; filter: none; }
+}
+.fx-burst {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sq);
+  height: var(--sq);
+  z-index: 3;
+  pointer-events: none;
+}
+.fx-burst::before {
+  content: '';
+  position: absolute;
+  inset: 20%;
+  border: 3px dashed var(--gold);
+  animation: burst 700ms steps(5) forwards;
+}
+@keyframes burst {
+  from { transform: scale(0.3) rotate(0); opacity: 1; }
+  to { transform: scale(1.8) rotate(45deg); opacity: 0; }
+}
+
+/* §6 Checkmate: the fallen lord kneels and dusk falls */
+.sprite.kneel {
+  animation: kneel 900ms steps(4) forwards;
+}
+@keyframes kneel {
+  to { transform: translateY(14%) scaleY(0.78); filter: grayscale(0.6) brightness(0.8); }
+}
+.board.board-dusk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(20, 12, 30, 0.55) 100%);
+  animation: intro-fade 1.2s steps(6) both;
+}
+
+/* §5 Death by armor (the katana slash still plays over all of them) */
+.piece.dying.die-none .sprite { animation: die-smoke 700ms steps(5) forwards; }
+.piece.dying.die-p .sprite { animation: die-flee 800ms steps(6) forwards; }
+.piece.dying.die-b .sprite { animation: die-kneel 800ms steps(5) forwards; }
+.piece.dying.die-heavy .sprite { animation: die-fall 800ms steps(5) forwards; }
+@keyframes die-smoke {
+  0% { opacity: 1; }
+  30% { filter: brightness(3); }
+  100% { opacity: 0; transform: translateY(-20%) scale(0.5); filter: blur(1px) brightness(2); }
+}
+@keyframes die-flee {
+  0% { opacity: 1; }
+  25% { transform: translateY(-10%); filter: brightness(2.5); }
+  100% { opacity: 0; transform: translateX(60%) translateY(10%); }
+}
+@keyframes die-kneel {
+  0% { opacity: 1; }
+  40% { transform: translateY(10%) scaleY(0.8); }
+  100% { opacity: 0; transform: translateY(14%) scaleY(0.75); filter: grayscale(1); }
+}
+@keyframes die-fall {
+  0% { opacity: 1; }
+  30% { filter: brightness(3); }
+  60% { transform: rotate(-80deg) translateY(10%); opacity: 1; }
+  100% { transform: rotate(-90deg) translateY(20%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gesture,
+  .piece.tremble,
+  .pin-lines line,
+  .fx-smoke::before,
+  .fx-smoke::after,
+  .fx-burst::before,
+  .board.board-dusk::after,
+  .square.sq-hanging::before {
+    animation: none !important;
   }
 }

@@ -1,5 +1,7 @@
 # 04 — Animation & reactions
 
+**Status:** implemented in 2D in `frontend/src/components/Board.tsx` (move effects, gestures, deaths), `frontend/src/story/reactions.ts` (position state) and the reactions section of `index.css`. Still open: the fallen-pieces row, §7 ambience, and the board tremor.
+
 Pieces are characters, so they should **move like who they are**. Two things drive the motion:
 
 1. **Armor class** sets the physical feel of every move: speed, weight and landing.

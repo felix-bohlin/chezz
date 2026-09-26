@@ -270,7 +270,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       <section className="replay-main">
         {theirs}
         <div className="board-wrap">
-          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} />
+          <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} tokugawa={ourArmy} />
           {showTitleCard && (
             <button className="title-card" onClick={() => setTitleCard(false)} aria-label="Dismiss title card">
               <span className="title-card-kicker">伊賀越え · The Night of Iga</span>
