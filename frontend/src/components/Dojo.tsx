@@ -23,6 +23,19 @@ export function Dojo({ manifest, live, onOpen }: Props) {
   const wins = games.filter((g) => g.winner === 'us').length
   const draws = games.filter((g) => g.winner === 'draw').length
   const losses = games.length - wins - draws
+  const best = manifest.highestWin == null ? undefined : games.find((g) => g.winner === 'us' && g.stockfishElo === manifest.highestWin)
+  const fighting = games.filter((g) => g.stockfishElo === manifest.nextElo)
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+  const fightingSummary = fighting.length
+    ? [
+        plural(fighting.length, 'attempt', 'attempts'),
+        ...(['draw', 'stockfish'] as const)
+          .map((w) => [fighting.filter((g) => g.winner === w).length, w] as const)
+          .filter(([n]) => n > 0)
+          .map(([n, w]) => (w === 'draw' ? plural(n, 'draw', 'draws') : plural(n, 'loss', 'losses'))),
+      ].join(' · ')
+    : 'First attempt coming up'
+  const pct = (n: number) => `${games.length ? (n / games.length) * 100 : 0}%`
 
   const statusOf = (elo: number): { status: Status; win?: ManifestEntry; attempts: number } => {
     const at = games.filter((g) => g.stockfishElo === elo)
@@ -42,19 +55,54 @@ export function Dojo({ manifest, live, onOpen }: Props) {
         </h1>
         <p className="hero-sub">Our engine marches on Stockfish. One province per Elo. Draws do not count.</p>
         <div className="hero-stats">
-          <div className="px-panel stat">
-            <span>Highest Elo conquered</span>
-            <b>{manifest.highestWin ?? '—'}</b>
-          </div>
-          <div className="px-panel stat">
-            <span>Next campaign</span>
-            <b>{manifest.nextElo}</b>
-          </div>
-          <div className="px-panel stat">
-            <span>Battles</span>
+          {best ? (
+            <a className="px-panel stat stat-best" href={`#/game/${best.id}`}>
+              <span>Best win vs Stockfish</span>
+              <b>
+                {best.stockfishElo}
+                <small> Elo</small>
+              </b>
+              <em>Battle #{best.id} · watch the replay ›</em>
+            </a>
+          ) : (
+            <div className="px-panel stat stat-best">
+              <span>Best win vs Stockfish</span>
+              <b>—</b>
+              <em>No win yet</em>
+            </div>
+          )}
+          <div className="px-panel stat stat-now">
+            <span>Now fighting</span>
             <b>
-              {wins}勝 {draws}分 {losses}敗
+              <small>Stockfish </small>
+              {manifest.nextElo}
             </b>
+            <em>{fightingSummary}</em>
+          </div>
+          <div className="px-panel stat stat-record">
+            <span>All battles</span>
+            <div className="record">
+              <span className="rec rec-win">
+                <i aria-hidden="true">勝</i>
+                <b>{wins}</b>
+                {wins === 1 ? 'win' : 'wins'}
+              </span>
+              <span className="rec rec-draw">
+                <i aria-hidden="true">分</i>
+                <b>{draws}</b>
+                {draws === 1 ? 'draw' : 'draws'}
+              </span>
+              <span className="rec rec-loss">
+                <i aria-hidden="true">敗</i>
+                <b>{losses}</b>
+                {losses === 1 ? 'loss' : 'losses'}
+              </span>
+            </div>
+            <div className="record-bar" aria-hidden="true">
+              <span className="rec-win" style={{ width: pct(wins) }} />
+              <span className="rec-draw" style={{ width: pct(draws) }} />
+              <span className="rec-loss" style={{ width: pct(losses) }} />
+            </div>
           </div>
         </div>
       </header>
