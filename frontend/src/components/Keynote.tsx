@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { hermitNosebleedUrl, hermitUrl } from '../pixel/render'
+import { hermitNosebleedUrl, hermitUrl, spriteUrl } from '../pixel/render'
+import { CAST } from '../story/cast'
+import linesJson from '../story/lines.json'
 import type { Manifest } from '../types/game'
 
 interface Props {
@@ -242,6 +244,55 @@ const SLIDES: Slide[] = [
       />
     ),
     roshi: () => 'And yes, I comment on every blunder. Someone has to.',
+  },
+  {
+    kicker: 'The story',
+    title: 'The night of Iga',
+    body: () => (
+      <>
+        <p className="kn-lead">
+          1582: Hanzō leads Lord Ieyasu home through Iga.
+          <br />
+          Every game is that night, replayed.
+        </p>
+        <div className="kn-cast" role="img" aria-label="The six roles in both clans">
+          {CAST.map((c) => (
+            <div key={c.role} className="kn-cast-pair">
+              <img src={spriteUrl(c.piece, 'w')} alt="" />
+              <img src={spriteUrl(c.piece, 'b')} alt="" />
+              <span>{c.chess}</span>
+            </div>
+          ))}
+        </div>
+        <p className="kn-dim">
+          Musashi plays the Tokugawa, Stockfish plays Akechi’s pursuers. <a href="#/story">Meet the cast ›</a>
+        </p>
+      </>
+    ),
+    roshi: () => 'Ninja on horseback? In my day we walked. Uphill. Both ways.',
+  },
+  {
+    kicker: 'The story',
+    title: 'How the pieces talk',
+    body: () => (
+      <>
+        <Flow
+          steps={[
+            ['Move', 'e.g. Nxc7+'],
+            ['Situation', 'check, fork, pin…'],
+            ['Speaker', 'mover or victim'],
+            ['Line', `${(linesJson as unknown[]).length} lines`],
+          ]}
+        />
+        <Cards
+          items={[
+            ['0 tokens', 'computed live in the browser'],
+            ['Same', 'position, same line, every replay'],
+          ]}
+        />
+      </>
+    ),
+    roshi: () => 'Even the pawns talk back now. Just like my students.',
   },
   {
     kicker: 'Takeaways',
