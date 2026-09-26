@@ -3157,3 +3157,320 @@ html:has(dialog.warmap[open]) {
 .piece:not(.dying) .gesture {
   position: relative;
 }
+
+/* ---------- Story page (#/story) ---------- */
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.story-hero {
+  padding: 26px clamp(16px, 4vw, 40px);
+  text-align: center;
+}
+.story-kanji {
+  font-size: 22px;
+  color: var(--vermilion);
+  letter-spacing: 4px;
+}
+.story-title {
+  margin: 4px 0 12px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 40px);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.story-lead {
+  max-width: 62ch;
+  margin: 0 auto 10px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.story-hook {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--vermilion-dark);
+}
+.story-sides {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 18px;
+}
+.story-side {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.story-side b {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.story-vs {
+  color: var(--vermilion);
+}
+.story-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.story-section {
+  padding: 18px clamp(14px, 3vw, 28px);
+}
+.story-section:not(.px-panel) {
+  padding: 0;
+}
+.story-h2 {
+  margin: 0 0 8px;
+}
+.story-section-head {
+  margin-bottom: 16px;
+  padding: 16px clamp(14px, 3vw, 28px) 4px;
+}
+.story-note {
+  margin: 0 0 12px;
+  max-width: 75ch;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.side-tokugawa {
+  color: #6b5210;
+}
+.side-akechi {
+  color: var(--vermilion-dark);
+}
+
+.cast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+}
+.cast-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.cast-sprites {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 3px solid var(--ink);
+}
+/* Each clan's soldier stands on its own board square: sand, then moss. */
+.cast-sprite {
+  width: 100%;
+  height: 96px;
+  padding: 8px;
+  object-fit: contain;
+  background: #dccaa0;
+  image-rendering: pixelated;
+  filter:
+    drop-shadow(1px 0 0 var(--ink))
+    drop-shadow(-1px 0 0 var(--ink))
+    drop-shadow(0 1px 0 var(--ink))
+    drop-shadow(0 -1px 0 var(--ink));
+}
+.cast-card:hover .cast-sprite,
+.cast-card:focus-within .cast-sprite {
+  animation: g-triumph 900ms steps(6);
+}
+.cast-sprite + .cast-sprite {
+  background: #6f8a64;
+}
+.cast-card:hover .cast-sprite + .cast-sprite {
+  animation: g-stamp 700ms steps(5) 150ms;
+}
+.cast-piece {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  text-align: center;
+}
+.cast-names {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.cast-vs {
+  font-size: 11px;
+  opacity: 0.6;
+}
+.cast-blurb,
+.cast-moves {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.cast-moves {
+  opacity: 0.8;
+  font-style: italic;
+}
+.cast-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+.cast-line {
+  padding: 5px 9px;
+  background: var(--washi);
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(10, 6, 16, 0.35);
+  font-size: 13px;
+  quotes: '“' '”';
+}
+.cast-line.side-tokugawa {
+  box-shadow: inset 0 0 0 2px var(--gold), 3px 3px 0 rgba(10, 6, 16, 0.35);
+  color: var(--ink);
+}
+.cast-line.side-akechi {
+  align-self: flex-end;
+}
+
+.story-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 14px;
+}
+.story-flow-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.story-box {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background: var(--washi-dark);
+  border: 3px solid var(--ink);
+  font-size: 12px;
+}
+.story-box strong {
+  font-family: var(--font-display);
+  font-size: 14px;
+}
+.story-arrow {
+  color: var(--vermilion);
+}
+.story-sounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Keynote: the cast strip on "The night of Iga" */
+.kn-cast {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+.kn-cast-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-items: center;
+  padding: 6px 6px 4px;
+  background: var(--washi-dark);
+  border: 3px solid var(--ink);
+}
+.kn-cast-pair img {
+  width: clamp(36px, 4.5vw, 56px);
+  height: clamp(36px, 4.5vw, 56px);
+  image-rendering: pixelated;
+}
+.kn-dim a {
+  color: var(--vermilion-dark);
+}
+.kn-cast-pair span {
+  grid-column: 1 / -1;
+  font-size: 0.55em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+  .story-flow-step {
+    width: 100%;
+  }
+  .story-arrow {
+    transform: rotate(90deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cast-card:hover .cast-sprite {
+    animation: none !important;
+  }
+}
+@media (max-width: 560px) {
+  /* Five topbar buttons don't fit one phone-width row: let them wrap. */
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topbar-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* ---------- Header: every button always visible, current page highlighted ---------- */
+.topbar-actions .px-btn[aria-current='page'] {
+  background: var(--ink);
+  color: var(--gold);
+  box-shadow: inset 0 0 0 2px var(--gold), 3px 3px 0 var(--ink);
+}
+.sound-menu {
+  position: relative;
+}
+.px-btn.sound-off {
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+.sound-pop {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 220px;
+  padding: 12px 14px;
+}
+.sound-toggle {
+  align-self: stretch;
+}
+.sound-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.sound-row .px-range {
+  width: 100%;
+  min-width: 0;
+}
+.sound-row .px-range:disabled {
+  opacity: 0.4;
+}
+@media (max-width: 560px) {
+  .sound-pop {
+    right: auto;
+    left: 0;
+  }
+}

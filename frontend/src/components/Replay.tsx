@@ -1,6 +1,6 @@
 import { marked } from 'marked'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { gameAudio, getSettings, isMusicPlaying, setSettings, stopMusic } from '../audio'
+import { gameAudio, isMusicPlaying, stopMusic } from '../audio'
 import { loadAnalysis, loadGame } from '../lib/data'
 import { START_FEN, sideToMove } from '../lib/fen'
 import { spriteUrl } from '../pixel/render'
@@ -109,7 +109,6 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const [showScroll, setShowScroll] = useState(false)
   const [bubbleMode, setBubbleMode] = useState<DisplayMode>(loadBubbleMode)
   const [senseiOn, setSenseiOn] = useState(loadSenseiOn)
-  const [muted, setMuted] = useState(() => getSettings().muted)
   const moveListRef = useRef<HTMLOListElement>(null)
   const prevTotal = useRef(game.moves.length)
   const audioPly = useRef(initialPly)
@@ -145,10 +144,6 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
     }
   }
 
-  const toggleSound = () => {
-    setSettings({ muted: !muted })
-    setMuted(!muted)
-  }
 
   // Sound follows the replay: cues only when advancing exactly one ply; jumps just retune the score (05 §6).
   useEffect(() => {
@@ -360,14 +355,6 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               師 {senseiOn ? 'On' : 'Off'}
             </button>
           )}
-          <button
-            className={`px-chip${muted ? '' : ' active'}`}
-            onClick={toggleSound}
-            aria-pressed={!muted}
-            aria-label={muted ? 'Turn sound on' : 'Mute sound'}
-          >
-            {muted ? '♪ Off' : '♪ On'}
-          </button>
         </div>
       </section>
 
