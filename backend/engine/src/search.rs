@@ -14,6 +14,8 @@ pub const MATE_BOUND: i32 = MATE - 1000;
 pub const MAX_PLY: usize = 128;
 
 const SKIP: i32 = i32::MIN;
+/// Ordering score for the counter move: below both killers, above losing captures.
+const COUNTER_MOVE_SCORE: i32 = 7_000_000;
 /// Losing captures (by SEE) are skipped at shallow depth when they lose more than this per ply.
 const SEE_PRUNE_MARGIN: i32 = 100;
 
@@ -144,6 +146,10 @@ pub struct Searcher {
     id: usize,
     pub contempt: i32,
     killers: [[u16; 2]; MAX_PLY],
+    /// Quiet move that last refuted each opponent move (indexed by its from|to bits).
+    counter: Vec<u16>,
+    /// Encoded move played at each ply of the current line (0 = null move).
+    move_stack: [u16; MAX_PLY],
     history: Vec<[[i32; 64]; 64]>,
     hist: Vec<u64>,
     pv: Vec<[Option<Move>; MAX_PLY]>,
@@ -170,6 +176,8 @@ impl Searcher {
             id,
             contempt: 25,
             killers: [[0; 2]; MAX_PLY],
+            counter: vec![0; 4096],
+            move_stack: [0; MAX_PLY],
             history: vec![[[0; 64]; 64]; 2],
             hist: Vec::with_capacity(1024),
             pv: vec![[None; MAX_PLY]; MAX_PLY],
@@ -186,6 +194,7 @@ impl Searcher {
     fn new_game(&mut self) {
         self.history = vec![[[0; 64]; 64]; 2];
         self.killers = [[0; 2]; MAX_PLY];
+        self.counter.iter_mut().for_each(|c| *c = 0);
     }
 
     #[inline]
@@ -354,6 +363,7 @@ impl Searcher {
             let mut child = pos.clone();
             child.play_unchecked(m);
             let ch = child_hash(pos, hash, m, &child);
+            self.move_stack[0] = enc(&m);
             self.hist.push(hash);
             let score = if i == 0 {
                 -self.negamax(&child, ch, depth - 1, 1, -beta, -alpha, true)
@@ -421,6 +431,12 @@ impl Searcher {
         }
         if self.killers[ply][1] == e {
             return 8_000_000;
+        }
+        if ply > 0 {
+            let prev = self.move_stack[ply - 1];
+            if prev != 0 && self.counter[(prev & 4095) as usize] == e {
+                return COUNTER_MOVE_SCORE;
+            }
         }
         let side = if pos.turn() == Color::White { 0 } else { 1 };
         self.history[side][e as usize & 63][(e as usize >> 6) & 63]
@@ -496,6 +512,7 @@ impl Searcher {
                 let r = 3 + depth / 6;
                 if let Ok(null_pos) = pos.clone().swap_turn() {
                     let nh = hash_of(&null_pos);
+                    self.move_stack[ply] = 0;
                     self.hist.push(hash);
                     let s = -self.negamax(&null_pos, nh, depth - 1 - r, ply + 1, -beta, -beta + 1, false);
                     self.hist.pop();
@@ -565,6 +582,7 @@ impl Searcher {
             }
 
             let ch = child_hash(pos, hash, m, &child);
+            self.move_stack[ply] = enc(&m);
             self.hist.push(hash);
             let score = if searched == 0 {
                 -self.negamax(&child, ch, depth - 1, ply + 1, -beta, -alpha, true)
@@ -607,6 +625,9 @@ impl Searcher {
                             if self.killers[ply][0] != e {
                                 self.killers[ply][1] = self.killers[ply][0];
                                 self.killers[ply][0] = e;
+                            }
+                            if ply > 0 && self.move_stack[ply - 1] != 0 {
+                                self.counter[(self.move_stack[ply - 1] & 4095) as usize] = e;
                             }
                             let bonus = (depth * depth).min(1200);
                             self.update_history(side, &m, bonus);
