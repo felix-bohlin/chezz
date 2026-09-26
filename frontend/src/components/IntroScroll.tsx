@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { murmur, playSituation, setTension, startMusic, stopMusic } from '../audio'
+import { playSituation, setTension, startMusic, stopMusic } from '../audio'
 import { paintPanel } from '../pixel/intro'
 import { hermitNosebleedUrl, hermitUrl } from '../pixel/render'
 import { HISTORY_NOTE, INTRO_PANELS, markIntroSeen, type IntroPanel } from '../story/intro'
@@ -8,7 +8,7 @@ import { SENSEI_NAME } from '../story/sensei'
 /** Time on each panel: enough to read the narration slowly, never under 9 s. */
 const panelMs = (p: IntroPanel) => Math.max(9000, 5000 + 75 * p.narration.length)
 
-function Panel({ panel, active, speaking }: { panel: IntroPanel; active: boolean; speaking: boolean }) {
+function Panel({ panel, active }: { panel: IntroPanel; active: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (canvas.current) paintPanel(canvas.current, panel.art)
@@ -20,7 +20,7 @@ function Panel({ panel, active, speaking }: { panel: IntroPanel; active: boolean
         <div className="intro-caption">{panel.caption}</div>
         {/* Master Roshi tells the story: his sprite beside a speech bubble holding the narration. */}
         <div className="intro-narrator">
-          <div className={`intro-roshi${speaking ? ' speaking' : ''}`}>
+          <div className="intro-roshi">
             <img src={hermitUrl()} alt={SENSEI_NAME} draggable={false} />
             {/* Mounted only while the panel is on screen, so the spurt plays when you arrive, not off-stage. */}
             {panel.bleed && active && (
@@ -62,29 +62,13 @@ export function IntroScroll({ onClose }: { onClose: () => void }) {
     return () => stopMusic()
   }, [])
 
-  // Roshi murmurs each panel's line; changing panel or closing cuts him off.
-  const [speaking, setSpeaking] = useState(false)
-  const lineMs = useRef<number | null>(null)
-  useEffect(() => {
-    const voice = murmur(INTRO_PANELS[index].narration)
-    lineMs.current = voice ? voice.duration * 1000 : null
-    setSpeaking(!!voice)
-    const t = voice ? setTimeout(() => setSpeaking(false), voice.duration * 1000) : undefined
-    return () => {
-      voice?.stop()
-      clearTimeout(t)
-    }
-  }, [index])
-
-  // Move on a beat after he stops talking (or on the reading timer when audio is locked).
   useEffect(() => {
     if (index === last) {
       playSituation('game_start')
       return
     }
     if (showHistory) return
-    const ms = lineMs.current !== null ? lineMs.current + 2500 : panelMs(INTRO_PANELS[index])
-    const t = setTimeout(() => setIndex((i) => i + 1), ms)
+    const t = setTimeout(() => setIndex((i) => i + 1), panelMs(INTRO_PANELS[index]))
     return () => clearTimeout(t)
   }, [index, last, showHistory])
 
@@ -117,7 +101,7 @@ export function IntroScroll({ onClose }: { onClose: () => void }) {
             <div className="intro-strip" style={{ transform: `translateX(${-index * 100}%)` }}>
               {INTRO_PANELS.map((p, i) => (
                 <div key={p.art} className="intro-slot" aria-hidden={i !== index}>
-                  <Panel panel={p} active={i === index} speaking={i === index && speaking} />
+                  <Panel panel={p} active={i === index} />
                 </div>
               ))}
             </div>

@@ -1425,10 +1425,6 @@ button.castle,
   height: 92px;
   animation: kn-bob 1.6s steps(2) infinite;
 }
-/* Bobs faster while he murmurs his line. */
-.intro-roshi.speaking {
-  animation-duration: 0.36s;
-}
 .intro-roshi img {
   position: absolute;
   inset: 0;

@@ -250,6 +250,20 @@
       "plies": 128,
       "engineVersion": "0.1.15",
       "ourMaxMoveMs": 4705
+    },
+    {
+      "id": "0018",
+      "file": "0018_elo-3000_draw.json",
+      "analysis": null,
+      "date": "2026-09-26T09:50:40Z",
+      "stockfishElo": 3000,
+      "ourColor": "black",
+      "result": "1/2-1/2",
+      "winner": "draw",
+      "termination": "threefold_repetition",
+      "plies": 72,
+      "engineVersion": "0.1.16",
+      "ourMaxMoveMs": 4706
     }
   ]
 }

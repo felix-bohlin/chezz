@@ -27,6 +27,8 @@ const CONNECTED_PASSER_EG: [i32; 8] = [0, 0, 5, 10, 20, 35, 60, 0];
 const CAUGHT_PASSER_DIV: i32 = 4;
 /// Score divisor in an ending where each side's only piece is a bishop and they're on opposite colours.
 const OCB_PURE_DIV: i32 = 3;
+/// With queens off, the king PST uses phase / this, pulling it toward the endgame (centralizing) table.
+const KING_QUEENLESS_PHASE_DIV: i32 = 2;
 const DOUBLED: (i32, i32) = (10, 20);
 const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
@@ -308,6 +310,8 @@ pub fn evaluate(pos: &Chess) -> i32 {
 
     let mut mg = [0i32; 2];
     let mut eg = [0i32; 2];
+    let mut king_mg = [0i32; 2];
+    let mut king_eg = [0i32; 2];
     let mut phase = 0;
     let mut attack_units = [0i32; 2];
     let mut attackers = [0i32; 2];
@@ -322,8 +326,13 @@ pub fn evaluate(pos: &Chess) -> i32 {
             for sq in b.by_piece(Piece { color, role }) {
                 let s = sq.to_usize();
                 let idx = if us == 0 { s ^ 56 } else { s };
-                mg[us] += MG_VAL[r] + MG_PST[r][idx];
-                eg[us] += EG_VAL[r] + EG_PST[r][idx];
+                if role == Role::King {
+                    king_mg[us] += MG_PST[r][idx];
+                    king_eg[us] += EG_PST[r][idx];
+                } else {
+                    mg[us] += MG_VAL[r] + MG_PST[r][idx];
+                    eg[us] += EG_VAL[r] + EG_PST[r][idx];
+                }
                 phase += PHASE_INC[r];
                 let f = s % 8;
                 let att = match role {
@@ -495,6 +504,10 @@ pub fn evaluate(pos: &Chess) -> i32 {
 
     let phase = phase.min(24);
     let mut score = ((mg[0] - mg[1]) * phase + (eg[0] - eg[1]) * (24 - phase)) / 24;
+    // Once queens are off, the king's shelter-seeking middlegame table counts half as much, so the endgame
+    // table (centralization) decides sooner (game 17: 20.Kf2 was the winning plan, we shuffled a bishop).
+    let king_phase = if b.queens().is_empty() { phase / KING_QUEENLESS_PHASE_DIV } else { phase };
+    score += ((king_mg[0] - king_mg[1]) * king_phase + (king_eg[0] - king_eg[1]) * (24 - king_phase)) / 24;
 
     let strong = if score > 0 { 0 } else { 1 };
     let weak = 1 - strong;

@@ -13,8 +13,6 @@ import { getTension, setTension, startMusic, stopMusic, type Tension } from "./m
 export { installUnlock, unlockAudio, getSettings, setSettings, type AudioSettings } from "./engine";
 export { playMapClose, playMapOpen, playMove, playProvince, playSituation } from "./sfx";
 export { startMusic, stopMusic, isMusicPlaying, setTension, type Tension } from "./music";
-export { murmur, type Murmur } from "./voice";
-
 export interface PlyAudio {
   /** Highest-priority situation for this ply (same one the dialogue engine picked), if any. */
   situation?: Situation;
