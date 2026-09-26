@@ -107,6 +107,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [showScroll, setShowScroll] = useState(false)
+  const [showMoves, setShowMoves] = useState(true)
   const [bubbleMode, setBubbleMode] = useState<DisplayMode>(loadBubbleMode)
   const [senseiOn, setSenseiOn] = useState(loadSenseiOn)
   const moveListRef = useRef<HTMLOListElement>(null)
@@ -406,7 +407,16 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
         </div>
 
         <div className="px-panel movelist-panel">
-          <div className="panel-title">棋譜 Move scroll</div>
+          <button className="panel-title scroll-toggle" onClick={() => setShowMoves((s) => !s)} aria-expanded={showMoves}>
+            棋譜 Move scroll {showMoves ? '▾' : '▸'}
+          </button>
+          {showMoves && (
+          <>
+          <div className="movelist-head" aria-hidden="true">
+            <span />
+            <span>白 {game.ourColor === 'white' ? 'Musashi' : 'Stockfish'}</span>
+            <span>赤 {game.ourColor === 'white' ? 'Stockfish' : 'Musashi'}</span>
+          </div>
           <ol className="movelist" ref={moveListRef}>
             {pairs.map((p) => (
               <li key={p.no}>
@@ -435,11 +445,13 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
               </li>
             ))}
           </ol>
+          </>
+          )}
         </div>
 
         {analysis && (
           <div className="px-panel">
-            <button className="panel-title scroll-toggle" onClick={() => setShowScroll((s) => !s)}>
+            <button className="panel-title scroll-toggle" onClick={() => setShowScroll((s) => !s)} aria-expanded={showScroll}>
               巻物 Sensei's scroll {showScroll ? '▾' : '▸'}
             </button>
             {showScroll && <div className="analysis" dangerouslySetInnerHTML={{ __html: analysisHtml }} />}

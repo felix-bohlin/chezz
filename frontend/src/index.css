@@ -13,7 +13,9 @@
   --px: 4px;
   --font-display: 'Silkscreen', 'DotGothic16', monospace;
   --font-num: 'VT323', 'DotGothic16', monospace;
-  font-family: 'DotGothic16', monospace;
+  /* Body text: Pixelify Sans reads better at small sizes; DotGothic16 still draws the kanji it lacks. */
+  --font-body: 'Pixelify Sans', 'DotGothic16', monospace;
+  font-family: var(--font-body);
   color: var(--ink);
   background: #1f1830;
   -webkit-font-smoothing: none;
@@ -113,7 +115,7 @@ button {
   color: var(--washi);
   box-shadow: 0 0 0 3px var(--ink), 4px 4px 0 3px rgba(0, 0, 0, 0.4);
   text-shadow: none;
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   letter-spacing: 0;
 }
 .footer {
@@ -139,7 +141,7 @@ button {
   display: block;
   width: 100%;
   text-align: left;
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 15px;
   letter-spacing: 1px;
   margin: 0 0 10px;
@@ -1580,7 +1582,7 @@ button.castle,
   font-size: 15px;
 }
 .title-card-side small {
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 11px;
   opacity: 0.7;
 }
@@ -1729,7 +1731,7 @@ button.castle,
 .about-table td.about-wrap {
   white-space: normal;
   min-width: 260px;
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -1764,7 +1766,7 @@ button.castle,
   line-height: 1.5;
 }
 .about-card h3 {
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--vermilion-dark);
   margin: 0 0 6px;
@@ -1809,7 +1811,7 @@ button.castle,
   white-space: nowrap;
 }
 .about-table th {
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--vermilion-dark);
 }
@@ -3037,7 +3039,7 @@ html:has(dialog.warmap[open]) {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 18px;
 }
 .warmap-kanji {
@@ -3174,7 +3176,7 @@ html:has(dialog.warmap[open]) {
   color: var(--vermilion-dark);
 }
 .pd-name {
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 17px;
 }
 .pd-elo {
@@ -3230,7 +3232,7 @@ html:has(dialog.warmap[open]) {
 .pd-section {
   margin: 4px 0 0;
   padding-bottom: 6px;
-  font-family: 'DotGothic16', monospace;
+  font-family: var(--font-body);
   font-size: 15px;
   font-weight: normal;
   color: var(--vermilion-dark);
@@ -3637,5 +3639,92 @@ html:has(dialog.warmap[open]) {
   .sound-pop {
     right: auto;
     left: 0;
+  }
+}
+
+/* ---------- Move scroll: one move per row, two columns, soft edges ---------- */
+.movelist-head,
+.movelist li {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr;
+  gap: 0 8px;
+  align-items: center;
+}
+.movelist-head {
+  padding: 0 10px 6px 0;
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  border-bottom: 2px dashed rgba(26, 18, 32, 0.2);
+}
+.movelist {
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-height: 300px;
+  padding: 14px 6px 14px 0;
+}
+.movelist li {
+  padding: 1px 0;
+}
+.movelist li:nth-child(even) {
+  background: rgba(90, 58, 34, 0.07);
+}
+.movelist .mv-no {
+  text-align: right;
+  padding-right: 2px;
+}
+.movelist .mv {
+  transition: background 120ms steps(2);
+}
+@media (max-width: 560px) {
+  .movelist {
+    max-height: 220px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movelist {
+    scroll-behavior: auto;
+  }
+}
+
+/* ---------- Every scroll area: thin quiet scrollbar; content boxes also fade at the edges ---------- */
+.movelist,
+.analysis,
+.analysis table,
+.intro-paper,
+.intro-history,
+.about-table,
+.about-code,
+.province-drawer {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 18, 32, 0.35) transparent;
+}
+:is(.movelist, .analysis, .analysis table, .intro-paper, .intro-history, .about-table, .about-code, .province-drawer)::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+:is(.movelist, .analysis, .analysis table, .intro-paper, .intro-history, .about-table, .about-code, .province-drawer)::-webkit-scrollbar-thumb {
+  background: rgba(26, 18, 32, 0.35);
+}
+:is(.movelist, .analysis, .analysis table, .intro-paper, .intro-history, .about-table, .about-code, .province-drawer)::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Text and moves fade gently in and out at the top and bottom instead of being cut off. */
+.movelist,
+.analysis,
+.intro-history {
+  scroll-behavior: smooth;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+.analysis,
+.intro-history {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .analysis,
+  .intro-history {
+    scroll-behavior: auto;
   }
 }
