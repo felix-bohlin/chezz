@@ -4,6 +4,7 @@
 // Pure and deterministic, like the dialogue engine: same game, same comments.
 
 import { fnv1a } from './dialogue'
+import type { GameRecord } from '../types/game'
 import linesJson from './sensei-lines.json'
 
 export type SenseiKind = 'blunder' | 'mistake' | 'good' | 'brilliant'
@@ -22,15 +23,22 @@ export interface SenseiNote {
   loss?: number
 }
 
-export interface SenseiComment extends SenseiNote {
+/** Not tied to a move: the greeting before the first move and the verdict after the last. */
+export type SenseiOccasion = 'intro' | 'victory' | 'defeat' | 'draw'
+
+/** One thing the sensei says at a ply: a verdict on the move just played, or an occasion line. */
+export interface SenseiSpeech {
+  ply: number
   lineId: string
   text: string
+  note?: SenseiNote
+  occasion?: SenseiOccasion
 }
 
 interface SenseiLine {
   id: string
-  by: SenseiNote['by']
-  kind: SenseiKind
+  by?: SenseiNote['by']
+  kind: SenseiKind | SenseiOccasion
   text: string
 }
 
@@ -68,9 +76,22 @@ function fill(text: string, n: SenseiNote): string {
     .replaceAll('{pawns}', ((n.loss ?? 0) / 100).toFixed(1))
 }
 
-/** Ply → the sensei's comment on the move that produced it. */
-export function buildSensei(gameId: string, notes: SenseiNote[]): Map<number, SenseiComment> {
-  const out = new Map<number, SenseiComment>()
+const OCCASION: Record<GameRecord['winner'], SenseiOccasion> = { us: 'victory', stockfish: 'defeat', draw: 'draw' }
+
+function occasionLine(game: GameRecord, occasion: SenseiOccasion, ply: number): SenseiSpeech {
+  const pool = LINES.filter((l) => l.kind === occasion)
+  const line = pool[fnv1a(`${game.id}|${occasion}`) % pool.length]
+  return { ply, lineId: line.id, text: line.text, occasion }
+}
+
+/**
+ * Ply → what the sensei says there: a greeting at ply 0, a verdict on every notable move, and the
+ * final word after the last move (unless the last move itself earned a comment). Empty without notes.
+ */
+export function buildSensei(game: GameRecord, notes: SenseiNote[]): Map<number, SenseiSpeech> {
+  const out = new Map<number, SenseiSpeech>()
+  if (!notes.length) return out
+  out.set(0, occasionLine(game, 'intro', 0))
   const recent = new Map<string, string[]>()
   for (const n of [...notes].sort((a, b) => a.ply - b.ply)) {
     const bucket = `${n.by}|${n.kind}`
@@ -81,9 +102,11 @@ export function buildSensei(gameId: string, notes: SenseiNote[]): Map<number, Se
     const fresh = usable.filter((l) => !used.includes(l.id))
     const pool = fresh.length ? fresh : usable
     if (!pool.length) continue
-    const line = pool[fnv1a(`${gameId}|${n.ply}|${bucket}`) % pool.length]
+    const line = pool[fnv1a(`${game.id}|${n.ply}|${bucket}`) % pool.length]
     recent.set(bucket, [...used, line.id].slice(-RECENT))
-    out.set(n.ply, { ...n, lineId: line.id, text: fill(line.text, n) })
+    out.set(n.ply, { ply: n.ply, lineId: line.id, text: fill(line.text, n), note: n })
   }
+  const last = game.moves.length
+  if (last > 0 && !out.has(last)) out.set(last, occasionLine(game, OCCASION[game.winner], last))
   return out
 }

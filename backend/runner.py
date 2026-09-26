@@ -21,7 +21,7 @@ import chess.engine
 import chess.pgn
 
 from common import ENGINE, GAMES, STOCKFISH, git_commit, load_games, next_game_id, next_ladder_elo, write_indexes
-from verify_games import verify
+from verify_games import NEAR_MISS_MS, verify
 
 MOVE_TIME = 5.0  # seconds per move, both players (competition rule)
 EVAL_CLAMP = 2000
@@ -140,6 +140,9 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
             if is_us and ms > MOVE_TIME * 1000:
                 violations.append(len(moves) + 1)
                 print(f"!!! TIME VIOLATION: our move at ply {len(moves) + 1} took {ms} ms (limit {MOVE_TIME:g} s)",
+                      file=sys.stderr, flush=True)
+            elif is_us and ms > NEAR_MISS_MS:
+                print(f"near miss: our move at ply {len(moves) + 1} took {ms} ms (budget {NEAR_MISS_MS} ms)",
                       file=sys.stderr, flush=True)
             # python-chess already rejects an illegal bestmove (push_uci raises -> EngineError above), but a
             # null move (0000) parses fine, so check legality once more before anything is recorded.

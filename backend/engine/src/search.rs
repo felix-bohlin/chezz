@@ -14,8 +14,8 @@ pub const MATE_BOUND: i32 = MATE - 1000;
 pub const MAX_PLY: usize = 128;
 
 const SKIP: i32 = i32::MIN;
-/// Null-move depth reduction base. 3 hid a 7–8 ply refutation at depth 17 (game 10, ply 42).
-const NULL_MOVE_BASE_R: i32 = 2;
+/// Null-move depth reduction base. 2 fixed game 10's ply-42 blunder but lost selfplay 6/16 (v0.1.11), so 3 stays.
+const NULL_MOVE_BASE_R: i32 = 3;
 /// Ordering score for the counter move: below both killers, above losing captures.
 const COUNTER_MOVE_SCORE: i32 = 7_000_000;
 /// Losing captures (by SEE) are skipped at shallow depth when they lose more than this per ply.

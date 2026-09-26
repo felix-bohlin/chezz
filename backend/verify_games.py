@@ -4,7 +4,8 @@ For each game it replays the moves with python-chess from startFen and checks th
   - every move is legal, and the recorded SAN and fenAfter match the replay
   - the embedded PGN contains exactly the same moves
   - the recorded result/termination agrees with the final position (checkmate, stalemate, draws)
-  - the Stockfish Elo is recorded, and our engine never exceeded the 5 s move limit
+  - the Stockfish Elo is recorded, and our engine never exceeded the 5 s move limit (a breach is an
+    error unless it is listed, with its cause, in KNOWN_TIME_BREACHES)
 
 Usage:
     python backend/verify_games.py            # exit code 1 if any check fails
@@ -21,6 +22,15 @@ import chess.pgn
 from common import load_games
 
 MOVE_LIMIT_MS = 5000
+# Anything slower leaves less than 150 ms between us and a breach: reported, so regressions show early.
+NEAR_MISS_MS = 4850
+
+# Moves of ours over the 5 s rule that are already on record. They are disclosed, not hidden: verify prints
+# them on every run, PROGRESS.md and the About page list them, and any move not in this table is an error.
+KNOWN_TIME_BREACHES = {
+    ("0003", 9): "engine 0.1.3 had no self-imposed cap yet and searched to ~4940 ms, leaving 60 ms for UCI "
+                 "round-trips; the cap (now 4700 ms) came in 0.1.5",
+}
 
 
 def verify(g: dict) -> tuple[list[str], list[str]]:
@@ -43,7 +53,16 @@ def verify(g: dict) -> tuple[list[str], list[str]]:
         if board.fen() != m["fenAfter"]:
             errors.append(f"ply {m['ply']}: fenAfter mismatch")
         if m["by"] == "us" and m["timeMs"] > MOVE_LIMIT_MS:
-            warnings.append(f"ply {m['ply']}: our move took {m['timeMs']} ms (> {MOVE_LIMIT_MS} ms, wall-clock)")
+            known = KNOWN_TIME_BREACHES.get((g["id"], m["ply"]))
+            msg = f"ply {m['ply']}: our move took {m['timeMs']} ms, over the {MOVE_LIMIT_MS} ms rule (wall-clock)"
+            if known:
+                warnings.append(f"{msg}. ON RECORD: {known}")
+            else:
+                errors.append(msg)
+
+    near = [m["timeMs"] for m in g["moves"] if m["by"] == "us" and NEAR_MISS_MS < m["timeMs"] <= MOVE_LIMIT_MS]
+    if near:
+        warnings.append(f"{len(near)} near miss(es) over {NEAR_MISS_MS} ms, slowest {max(near)} ms")
 
     pgn = chess.pgn.read_game(io.StringIO(g["pgn"]))
     pgn_moves = [mv.uci() for mv in pgn.mainline_moves()] if pgn else []

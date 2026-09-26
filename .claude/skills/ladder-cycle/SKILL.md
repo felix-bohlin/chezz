@@ -48,7 +48,8 @@ Then invoke the `analyze-game` skill with `games/<STEM>.json`. It runs full-stre
    python backend/selfplay.py --baseline backend/engine/baseline/musashi.exe --games 16 --time 0.1
    ```
    - Exit code 0 (≥ 40%): keep the change — but if it touched search, threading or time management,
-     also run `python backend/timecheck.py --positions 10` (≈1 min) and revert on any move over 5000 ms.
+     also run `python backend/timecheck.py --positions 10` (≈1 min) and revert if it exits 1 (any move over
+     its 4850 ms budget, timed like move 1 of a game).
    - Exit code 1: revert the source change (restore the baseline exe too, keep the version bump out),
      and append "reverted: <change> — selfplay <score>" to the Decision section of the analysis file.
 

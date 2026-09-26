@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { About } from './components/About'
 import { Dojo } from './components/Dojo'
 import { IntroScroll } from './components/IntroScroll'
+import { Keynote } from './components/Keynote'
 import { Live, useLive } from './components/Live'
 import { Replay } from './components/Replay'
 import { Scenery } from './components/Scenery'
@@ -49,6 +50,7 @@ export default function App() {
   const initialPly = route?.[2] ? Number(route[2]) : 0
   const isLive = hash.startsWith('#/live')
   const isAbout = hash.startsWith('#/about')
+  const keynote = hash.match(/^#\/keynote(?:\/(\d+))?/)
   const entry = gameId ? manifest?.games.find((g) => g.id === gameId) : undefined
   const openGame = (id: string) => (window.location.hash = `#/game/${id}`)
 
@@ -69,12 +71,17 @@ export default function App() {
                 <span className="live-dot" /> LIVE vs {live.stockfishElo}
               </a>
             )}
+            {!keynote && (
+              <a className="px-btn" href="#/keynote" aria-label="Keynote: how we built this with Claude Code">
+                講 Keynote
+              </a>
+            )}
             {!isAbout && (
               <a className="px-btn" href="#/about" aria-label="Fair play: how every move is verified legal">
                 正 Fair play
               </a>
             )}
-            {(gameId || isLive || isAbout) && (
+            {(gameId || isLive || isAbout || keynote) && (
               <a className="px-btn" href="#/">
                 ◀ Campaign
               </a>
@@ -86,6 +93,8 @@ export default function App() {
             <Live />
           ) : isAbout ? (
             <About manifest={manifest} />
+          ) : keynote ? (
+            <Keynote manifest={manifest} slide={Number(keynote[1] ?? 0)} />
           ) : (
             <>
               {error && !manifest && <div className="px-panel notice">Could not load games/manifest.json: {error}</div>}

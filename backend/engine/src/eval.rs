@@ -18,6 +18,10 @@ const PASSED_KING_W: [i32; 8] = [0, 0, 0, 1, 2, 3, 4, 0];
 // Unsupported advanced pawn with an enemy piece on its stop square.
 const ADV_BLOCKED_MG: [i32; 8] = [0, 0, 0, 0, 10, 25, 40, 0];
 const ADV_BLOCKED_EG: [i32; 8] = [0, 0, 0, 0, 5, 12, 20, 0];
+// Extra for a passed pawn with a passed neighbour on an adjacent file (connected passers support each
+// other's advance). Kept smaller than the analysts' proposal so middlegame pawns aren't overrated.
+const CONNECTED_PASSER_MG: [i32; 8] = [0, 0, 2, 4, 8, 12, 20, 0];
+const CONNECTED_PASSER_EG: [i32; 8] = [0, 0, 5, 10, 20, 35, 60, 0];
 const DOUBLED: (i32, i32) = (10, 20);
 const ISOLATED: (i32, i32) = (8, 12);
 const BISHOP_PAIR: (i32, i32) = (25, 45);
@@ -267,6 +271,17 @@ pub fn evaluate(pos: &Chess) -> i32 {
         (b.pawns() & b.black()).0,
     ];
     let pawn_att = [pawn_attacks_bb(pawns[0], Color::White), pawn_attacks_bb(pawns[1], Color::Black)];
+    let mut passers = [0u64; 2];
+    for side in 0..2 {
+        let mut bb = pawns[side];
+        while bb != 0 {
+            let s = bb.trailing_zeros() as usize;
+            bb &= bb - 1;
+            if m.passed[side][s] & pawns[1 - side] == 0 {
+                passers[side] |= 1u64 << s;
+            }
+        }
+    }
     let king_sq = [b.king_of(Color::White), b.king_of(Color::Black)];
     let king_zone = [
         king_sq[0].map_or(0, |k| attacks::king_attacks(k).0 | (1u64 << k.to_usize())),
@@ -312,6 +327,10 @@ pub fn evaluate(pos: &Chess) -> i32 {
                             };
                             mg[us] += pmg;
                             eg[us] += peg;
+                            if m.adjacent[f] & passers[us] != 0 {
+                                mg[us] += CONNECTED_PASSER_MG[rel];
+                                eg[us] += CONNECTED_PASSER_EG[rel];
+                            }
                             // Kings racing to the pawn's stop square decide passed-pawn endgames.
                             if rel >= 3 && stop < 64 {
                                 let stop_sq = Square::new(stop as u32);

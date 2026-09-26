@@ -20,7 +20,15 @@ Required by the competition rules after **every** game: this skill + two differe
    Its last line is a `<!-- sensei-moves {...} -->` block — keep it verbatim in the analysis file (it drives
    the replay's sensei commentary), but don't pass it to the sub-agents.
 
-3. **Two sub-agents in parallel.** In a *single* message, launch both with the Agent tool:
+3. **Two sub-agents in parallel.** Preferred: run the `ladder-analysis` workflow
+   (`Workflow({scriptPath: ".claude/workflows/ladder-analysis.js", args: {game, engine_version, report,
+   engine_state, do_not}})`). It runs `shogun-sensei` and `engine-smith` on a stronger model, then gives every
+   suggestion its own skeptic that checks it against the code (already implemented? right direction? on the
+   do-not list? evidence correct?). Uses no local CPU, so it can run while the next game plays. Put each
+   analyst's `markdown` verbatim in the analysis file and pick the Decision from `kept` (highest score first);
+   list `refuted` with reasons. Keep `do_not` current: everything implemented or reverted so far.
+
+   Fallback, if the workflow is unavailable: in a *single* message, launch both with the Agent tool:
    - `subagent_type: shogun-sensei`
    - `subagent_type: engine-smith`
 

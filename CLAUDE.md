@@ -72,10 +72,15 @@ then unzip into `backend/tools/stockfish/`. Minimum `UCI_Elo` is 1320.
 
 ## Competition rules we must keep satisfying
 
-- ≤ 5 s thinking per move for **both** players (`Limit(time=5.0)`). Our engine enforces it itself: hard
-  ceiling `MaxThinkMs` = 4750 ms whatever the GUI sends, plus a 150 ms margin under `movetime`. The runner
-  records `ourMaxMoveMs` and any `timeViolations` per game; `python backend/timecheck.py` proves it on
-  positions from real games. Run timecheck after any change to search, threading or time management.
+- ≤ 5 s thinking per move for **both** players (`Limit(time=5.0)`). The runner's clock is wall-clock from
+  before the position is sent until `bestmove` arrives, so UCI round-trips and, on move 1, `ucinewgame`
+  count against us. Our engine enforces it itself: its search stops at `MaxThinkMs` = 4700 ms whatever the
+  GUI sends (150 ms margin under `movetime` too), and the hash table is pre-faulted at startup so move 1
+  pays no page faults (0.1.12). **One breach is on record**: game 0003 ply 9, 5001 ms, engine 0.1.3 (no cap
+  yet). It is listed in `KNOWN_TIME_BREACHES` in `verify_games.py`; any other move over 5 s is a verify
+  error. `python backend/timecheck.py` times the engine like move 1 of a game and **fails any move over
+  4850 ms** (150 ms safety budget). Run it after any change to search, threading, hashing or time management.
+  Don't run CPU-heavy tools (builds, fuzz, selfplay) while a ladder game is being played.
 - Stockfish strength set only via `UCI_LimitStrength: True` + `UCI_Elo`.
 - Every move is legal, checked in four layers: the engine only plays moves from shakmaty's legal move
   generator (the root move list; TT/killer moves only reorder it); python-chess rejects any illegal

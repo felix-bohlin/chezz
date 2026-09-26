@@ -25,11 +25,12 @@ import chess.engine
 from common import ROOT, STOCKFISH
 
 MATE_CP = 3000
-# Sensei praise: the played move was Stockfish's best and the second-best move was this much worse
-# (evals clamped to ±PRAISE_CLAMP, so "winning either way" never counts as an only-move).
+# Sensei verdicts use evals clamped to ±SENSEI_CLAMP, so moves in an already-decided game neither
+# blunder nor shine. Praise: the played move was Stockfish's best and the second-best was GOOD_GAP worse;
+# brilliant if it is also a sacrifice, or a quiet only-move BRILLIANT_GAP ahead of the rest.
 GOOD_GAP = 100
 BRILLIANT_GAP = 250
-PRAISE_CLAMP = 800
+SENSEI_CLAMP = 800
 VALUE = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 SENSEI_RE = re.compile(r"\n*<!-- sensei-moves .*? -->\n?")
 
@@ -66,15 +67,25 @@ def is_sacrifice(board: chess.Board, move: chess.Move) -> bool:
     return gain - lost <= -2
 
 
-def sensei_kind(kind: str | None, played_best: bool, best: int, second: int | None, sac: bool) -> str | None:
+def sensei_kind(board: chess.Board, move: chess.Move, played_best: bool, before: int, after: int,
+                second: int | None) -> tuple[str | None, int]:
+    """(verdict, clamped loss) for one move; evals from the mover's point of view, before the move is pushed."""
+    def clamp(v: int) -> int:
+        return max(-SENSEI_CLAMP, min(v, SENSEI_CLAMP))
+
+    loss = 0 if played_best else max(0, clamp(before) - clamp(after))
+    kind = classify(loss)
     if kind in ("blunder", "mistake"):
-        return kind
-    if not played_best or second is None:
-        return None
-    gap = max(-PRAISE_CLAMP, min(best, PRAISE_CLAMP)) - max(-PRAISE_CLAMP, min(second, PRAISE_CLAMP))
-    if gap >= BRILLIANT_GAP or (gap >= GOOD_GAP and sac):
-        return "brilliant"
-    return "good" if gap >= GOOD_GAP else None
+        return kind, loss
+    if not played_best or second is None or clamp(before) - clamp(second) < GOOD_GAP:
+        return None, loss
+    capture = board.is_capture(move)
+    if is_sacrifice(board, move) or (clamp(before) - clamp(second) >= BRILLIANT_GAP and not capture
+                                     and not board.gives_check(move)):
+        return "brilliant", loss
+    if capture and board.move_stack and board.peek().to_square == move.to_square:
+        return None, loss  # a plain recapture is no feat
+    return "good", loss
 
 
 def annotate(analysis: pathlib.Path, block: str) -> None:
@@ -152,13 +163,13 @@ def main() -> None:
         if kind:
             counts[m["by"]][kind] = counts[m["by"]].get(kind, 0) + 1
         second = None if seconds[i] is None else seconds[i] * mover_sign
-        sk = sensei_kind(kind, played_best, before, second, is_sacrifice(board, move))
+        sk, sensei_loss = sensei_kind(board, move, played_best, before, after, second)
         if sk:
             # before/after from OUR point of view, like the report's eval columns
             note = {"ply": i + 1, "by": m["by"], "kind": sk, "san": m["san"], "best": bests[i],
                     "before": evals[i] * sign, "after": evals[i + 1] * sign}
-            if kind:
-                note["loss"] = loss
+            if sk in ("blunder", "mistake"):
+                note["loss"] = sensei_loss
             sensei.append(note)
         if m["by"] == "us":
             ph = phase_of(board, i + 1)
@@ -193,7 +204,7 @@ def main() -> None:
     out.append(f"## Objective report — game {rec['id']} (Stockfish UCI_Elo {rec['stockfishElo']})")
     out.append("")
     out.append(f"- Result: **{rec['result']}** ({rec['termination']}), we played **{rec['ourColor']}**, "
-               f"{len(rec['moves'])} plies, winner: **{rec['winner']}**")
+               f"{(len(rec['moves']) + 1) // 2} moves, winner: **{rec['winner']}**")
     out.append(f"- Avg centipawn loss — us: **{acpl(stats['us'])}**, Stockfish: **{acpl(stats['stockfish'])}**")
     out.append(f"- Our errors: {counts['us'] or 'none'} | Stockfish errors: {counts['stockfish'] or 'none'}")
     out.append(f"- Our ACPL by phase: opening {acpl(phase_loss['opening'])}, "
@@ -203,18 +214,20 @@ def main() -> None:
     out.append(f"- Peak objective advantage for us: {max_adv:+d} cp"
                + (" — **advantage not converted**" if max_adv >= 300 and rec["winner"] != "us" else ""))
     swing = [(i, evals[i] * sign) for i in range(0, len(evals), max(1, len(evals) // 16))]
-    out.append("- Eval curve (our POV, sampled by ply): " + ", ".join(f"{p}:{v:+d}" for p, v in swing))
+    # Label each sample by the move just played: "12." after White's 12th, "12..." after Black's.
+    label = lambda p: "start" if p == 0 else f"{(p + 1) // 2}{'.' if p % 2 else '...'}"
+    out.append("- Eval curve (our POV, sampled by move): " + ", ".join(f"{label(p)}:{v:+d}" for p, v in swing))
     out.append("")
     worst = sorted(rows, key=lambda r: -r["loss"])[: args.top]
     worst = [r for r in worst if r["loss"] >= 40]
     if worst:
         out.append("### Our worst moves (full-strength Stockfish)")
         out.append("")
-        out.append("| Ply | Move | Played | SF best | Eval before → after (our POV) | Loss | Phase | Our engine said | Depth | FEN before |")
-        out.append("|---|---|---|---|---|---|---|---|---|---|")
+        out.append("| Move | Played | SF best | Eval before → after (our POV) | Loss | Phase | Our engine said | Depth | FEN before |")
+        out.append("|---|---|---|---|---|---|---|---|---|")
         for r in worst:
             own = "?" if r["own"] is None else f"{r['own']:+d}"
-            out.append(f"| {r['ply']} | {r['move_no']} | {r['san']} | {r['best']} | {r['before']:+d} → {r['after']:+d} | "
+            out.append(f"| {r['move_no']} | {r['san']} | {r['best']} | {r['before']:+d} → {r['after']:+d} | "
                        f"{r['loss']} {r['kind'] or ''} | {r['phase']} | {own} | {r['depth']} | `{r['fen']}` |")
     else:
         out.append("### No significant errors by us (all moves within 40 cp of Stockfish's best).")

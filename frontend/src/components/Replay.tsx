@@ -109,7 +109,6 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
   const [showScroll, setShowScroll] = useState(false)
   const [bubbleMode, setBubbleMode] = useState<DisplayMode>(loadBubbleMode)
   const [senseiOn, setSenseiOn] = useState(loadSenseiOn)
-  const [senseiDismissed, setSenseiDismissed] = useState<number | null>(null)
   const [muted, setMuted] = useState(() => getSettings().muted)
   const moveListRef = useRef<HTMLOListElement>(null)
   const prevTotal = useRef(game.moves.length)
@@ -125,10 +124,8 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
     return bubbleMode === 'off' ? [] : bubbleMode === 'key' ? all.filter((b) => b.key) : all
   }, [story, ply, bubbleMode])
 
-  const sensei = useMemo(() => buildSensei(game.id, parseSenseiNotes(analysis)), [game.id, analysis])
-  // Hidden under the title card and the result banner; a click dismisses it for that move.
-  const senseiComment =
-    senseiOn && !(titleCard && ply === 0) && !(!live && ply === total) && senseiDismissed !== ply ? sensei.get(ply) : undefined
+  const sensei = useMemo(() => buildSensei(game, parseSenseiNotes(analysis)), [game, analysis])
+  const senseiComment = senseiOn ? sensei.get(ply) : undefined
 
   const toggleSensei = () => {
     setSenseiOn(!senseiOn)
@@ -274,9 +271,6 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
         {theirs}
         <div className="board-wrap">
           <Board fen={fen} lastMove={current?.uci} flipped={flipped} bubbles={showTitleCard ? [] : bubbles} />
-          {senseiComment && (
-            <Sensei key={senseiComment.ply} comment={senseiComment} onDismiss={() => setSenseiDismissed(ply)} />
-          )}
           {showTitleCard && (
             <button className="title-card" onClick={() => setTitleCard(false)} aria-label="Dismiss title card">
               <span className="title-card-kicker">伊賀越え · The Night of Iga</span>
@@ -378,6 +372,7 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
       </section>
 
       <aside className="replay-side">
+        {senseiOn && sensei.size > 0 && <Sensei speech={senseiComment} />}
         <div className="px-panel battle-info">
           <div className="battle-title">
             Battle #{game.id} <span className="battle-elo">vs Elo {game.stockfishElo}</span>
@@ -393,9 +388,9 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
           )}
           <div className="battle-stats">
             <div>
-              <span>Ply</span>
+              <span>Move</span>
               <b>
-                {ply}/{total}
+                {Math.ceil(ply / 2)}/{Math.ceil(total / 2)}
               </b>
             </div>
             <div>
@@ -438,8 +433,10 @@ export function ReplayView({ game, analysis = null, initialPly = 0, live = false
                       onClick={() => seek(x.i + 1)}
                     >
                       {x.m.san}
-                      {sensei.has(x.i + 1) && (
-                        <span className={`mv-glyph glyph-${sensei.get(x.i + 1)!.kind}`}>{KIND_LABEL[sensei.get(x.i + 1)!.kind].glyph}</span>
+                      {sensei.get(x.i + 1)?.note && (
+                        <span className={`mv-glyph glyph-${sensei.get(x.i + 1)!.note!.kind}`}>
+                          {KIND_LABEL[sensei.get(x.i + 1)!.note!.kind].glyph}
+                        </span>
                       )}
                       <span className={`mv-time${x.m.timeMs > limitMs + OVER_TOLERANCE_MS ? ' mv-time-over' : ''}`}>
                         {(x.m.timeMs / 1000).toFixed(1)}s

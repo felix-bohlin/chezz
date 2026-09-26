@@ -64,6 +64,29 @@ def our_max_ms(game: dict) -> int:
     return max((m["timeMs"] for m in game["moves"] if m["by"] == "us"), default=0)
 
 
+# First engine version with the self-imposed MaxThinkMs cap (now 4700 ms); earlier versions had thinner margins.
+CAPPED_SINCE = (0, 1, 5)
+
+
+def _version(v: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(x) for x in v.split("."))
+    except ValueError:
+        return (0,)
+
+
+def time_record(games: list[dict]) -> list[str]:
+    """PROGRESS.md lines for the 5 s rule: every breach by name, then the slowest move since the cap."""
+    breaches = [(g["id"], m["ply"], m["timeMs"], g["engine"]["version"])
+                for g in games for m in g["moves"] if m["by"] == "us" and m["timeMs"] > 5000]
+    capped = [our_max_ms(g) for g in games if _version(g["engine"]["version"]) >= CAPPED_SINCE]
+    lines = [f"- **5 s rule, moves of ours over the limit:** {len(breaches) or 'none'}"]
+    lines += [f"  - game {i} ply {p}: {ms} ms (engine {v}, before the self-imposed cap)" for i, p, ms, v in breaches]
+    lines.append(f"- **Slowest move since the cap (engine ≥ {'.'.join(map(str, CAPPED_SINCE))}):** "
+                 f"{max(capped, default=0)} ms, wall-clock incl. UCI round-trip (engine searches ≤ 4700 ms)")
+    return lines
+
+
 def write_indexes() -> None:
     """Regenerate manifest.json and PROGRESS.md from the per-game files (single writer, never hand-edit)."""
     games = load_games()
@@ -104,8 +127,7 @@ def write_indexes() -> None:
         f"(W {sum(g['winner'] == 'us' for g in games)} / "
         f"D {sum(g['winner'] == 'draw' for g in games)} / "
         f"L {sum(g['winner'] == 'stockfish' for g in games)})",
-        f"- **Slowest move by our engine, all games:** {max((e['ourMaxMoveMs'] for e in entries), default=0)} ms "
-        f"(limit 5000 ms; engine caps itself at 4750 ms)",
+        *time_record(games),
         "",
         "| # | Date (UTC) | Stockfish Elo | Our color | Result | Outcome | Termination | Plies | Our max think | Engine | Game | Analysis |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|",

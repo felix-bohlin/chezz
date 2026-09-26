@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 
 pub const BOUND_EXACT: u8 = 1;
 pub const BOUND_LOWER: u8 = 2;
@@ -39,6 +39,8 @@ pub struct TT {
     table: Vec<[AtomicU64; 2]>,
     mask: usize,
     generation: AtomicU8,
+    /// Set by the first store after a clear; `clear()` on a clean table is free.
+    dirty: AtomicBool,
 }
 
 impl TT {
@@ -48,19 +50,34 @@ impl TT {
         while n * 2 * 16 <= bytes {
             n *= 2;
         }
-        TT {
+        let tt = TT {
             table: (0..n).map(|_| [AtomicU64::new(0), AtomicU64::new(0)]).collect(),
             mask: n - 1,
             generation: AtomicU8::new(0),
-        }
+            dirty: AtomicBool::new(false),
+        };
+        // The allocator hands back lazily-zeroed pages, so the first write to each page faults. Touch them
+        // all now, at startup or `setoption Hash`, where no move clock is running. Otherwise the 5 s rule
+        // pays for it: the first `ucinewgame` (sent inside the runner's clock) took 60-200 ms.
+        tt.wipe();
+        tt
     }
 
-    pub fn clear(&self) {
+    fn wipe(&self) {
         for slot in &self.table {
             slot[0].store(0, Ordering::Relaxed);
             slot[1].store(0, Ordering::Relaxed);
         }
         self.generation.store(0, Ordering::Relaxed);
+        self.dirty.store(false, Ordering::Relaxed);
+    }
+
+    /// Called on `ucinewgame`. Skips the wipe when nothing was stored since the last one: the runner starts
+    /// a fresh engine process per game, so its `ucinewgame` costs nothing on our move clock.
+    pub fn clear(&self) {
+        if self.dirty.load(Ordering::Relaxed) {
+            self.wipe();
+        }
     }
 
     pub fn new_search(&self) {
@@ -91,6 +108,10 @@ impl TT {
         let old_d = s[1].load(Ordering::Relaxed);
         let same = s[0].load(Ordering::Relaxed) ^ old_d == key;
         let old = Entry::unpack(old_d);
+        if !self.dirty.load(Ordering::Relaxed) {
+            // Read-mostly flag: written once per game, so threads don't fight over its cache line.
+            self.dirty.store(true, Ordering::Relaxed);
+        }
         if !same || old.generation != generation || depth + 2 >= old.depth as i32 || bound == BOUND_EXACT {
             let e = Entry {
                 mv: if mv == 0 && same { old.mv } else { mv },

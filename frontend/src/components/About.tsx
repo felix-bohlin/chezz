@@ -15,8 +15,17 @@ interface GameAudit {
   illegal: number
   mismatched: number
   maxMs: number
+  /** Our moves over the 5 s rule, wall-clock as the runner measured them. */
+  over: { ply: number; ms: number }[]
+  /** Our moves slower than NEAR_MISS_MS: inside the rule, but with under 150 ms of margin. */
+  near: number
+  ourMoves: number
   version: string
+  winner: GameRecord['winner']
 }
+
+const LIMIT_MS = 5000
+const NEAR_MISS_MS = 4850
 
 /** Replays one saved game with chess.js (a third, browser-side move generator) and counts problems. */
 function audit(g: GameRecord): GameAudit {
@@ -24,8 +33,16 @@ function audit(g: GameRecord): GameAudit {
   let illegal = 0
   let mismatched = 0
   let maxMs = 0
+  let near = 0
+  let ourMoves = 0
+  const over: { ply: number; ms: number }[] = []
   for (const m of g.moves) {
-    if (m.by === 'us') maxMs = Math.max(maxMs, m.timeMs)
+    if (m.by === 'us') {
+      ourMoves++
+      maxMs = Math.max(maxMs, m.timeMs)
+      if (m.timeMs > LIMIT_MS) over.push({ ply: m.ply, ms: m.timeMs })
+      else if (m.timeMs > NEAR_MISS_MS) near++
+    }
     try {
       chess.move({ from: m.uci.slice(0, 2), to: m.uci.slice(2, 4), promotion: m.uci[4] })
     } catch {
@@ -48,9 +65,45 @@ function audit(g: GameRecord): GameAudit {
     illegal,
     mismatched,
     maxMs,
+    over,
+    near,
+    ourMoves,
     version: g.engine.version,
+    winner: g.winner,
   }
 }
+
+const ver = (v: string) => v.split('.').map(Number)
+const verGte = (a: string, b: string) => {
+  const x = ver(a)
+  const y = ver(b)
+  for (let i = 0; i < 3; i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0)
+  return true
+}
+
+/** How the engine kept (or failed to keep) the 5 s rule, version by version. */
+const ERAS = [
+  {
+    from: '0.1.0',
+    label: '0.1.0 – 0.1.3',
+    how: 'Searched until about 60 ms before the 5 s movetime. No cap of its own, so a slow UCI round-trip could tip a move over.',
+  },
+  {
+    from: '0.1.4',
+    label: '0.1.4',
+    how: 'Kept a 150 ms margin under movetime for the UCI round-trip.',
+  },
+  {
+    from: '0.1.5',
+    label: '0.1.5 – 0.1.11',
+    how: 'Hard cap on its own search (4750 ms, later 4700 ms) whatever the GUI sends. Move 1 still ran 50–200 ms long.',
+  },
+  {
+    from: '0.1.12',
+    label: '0.1.12 +',
+    how: 'Hash table pre-faulted at startup, so the first move of a game no longer pays for 256 MB of page faults.',
+  },
+] as const
 
 const LAYERS = [
   {
@@ -80,15 +133,18 @@ const LAYERS = [
 ] as const
 
 const FUZZ = [
-  { engine: 'chezz 0.1.8', threads: 1, search: '10 ms', positions: 1885, illegal: 0 },
+  { engine: 'chezz 0.1.9', threads: 1, search: '10 ms', positions: 1885, illegal: 0 },
   { engine: 'chezz 0.1.9', threads: 2, search: '150 ms', positions: 967, illegal: 0 },
-  { engine: 'musashi 0.1.9', threads: 4, search: '50 ms', positions: 1608, illegal: 0 },
+  { engine: 'musashi 0.1.10', threads: 4, search: '50 ms', positions: 1608, illegal: 0 },
 ] as const
+
+/** `python backend/timecheck.py` runs: every sample timed like move 1 of a game (ucinewgame + go). */
+const TIMECHECK: readonly { engine: string; samples: number; avg: number; max: number; overBudget: number }[] = []
 
 const RULES = [
   {
     rule: 'At most 5 s of thinking per move, both players',
-    how: 'Both engines get Limit(time=5.0). Ours also caps itself at 4750 ms whatever the GUI sends, plus a 150 ms margin under any movetime. The runner records the slowest move of every game.',
+    how: 'Both engines get Limit(time=5.0). Ours caps its own search at 4700 ms whatever the GUI sends. The runner times every move wall-clock, UCI round-trip included, and one of ours went over: see the 5-second record below.',
   },
   {
     rule: 'Stockfish weakened only through UCI_LimitStrength + UCI_Elo',
@@ -123,7 +179,11 @@ export function About({ manifest }: Props) {
   const plies = audits?.reduce((n, a) => n + a.plies, 0) ?? 0
   const illegal = audits?.reduce((n, a) => n + a.illegal, 0) ?? 0
   const mismatched = audits?.reduce((n, a) => n + a.mismatched, 0) ?? 0
-  const slowest = audits?.reduce((n, a) => Math.max(n, a.maxMs), 0) ?? 0
+  const breaches = audits?.flatMap((a) => a.over.map((o) => ({ ...o, id: a.id, version: a.version }))) ?? []
+  const ourMoves = audits?.reduce((n, a) => n + a.ourMoves, 0) ?? 0
+  const topWin = audits
+    ?.filter((a) => a.winner === 'us')
+    .reduce<GameAudit | null>((b, a) => (!b || a.elo > b.elo ? a : b), null)
 
   return (
     <div className="about">
@@ -146,10 +206,17 @@ export function About({ manifest }: Props) {
             <span>Illegal moves found</span>
             <b>{audits ? illegal + mismatched : '…'}</b>
           </div>
-          <div className="px-panel stat">
-            <span>Slowest think (limit 5000 ms)</span>
-            <b>{audits ? `${slowest} ms` : '…'}</b>
-          </div>
+          <a
+            className={`px-panel stat stat-link ${audits && breaches.length ? 'stat-warn' : 'stat-good'}`}
+            href="#/about"
+            onClick={(e) => {
+              e.preventDefault()
+              document.getElementById('time-record')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+          >
+            <span>Our moves over 5 s ↓</span>
+            <b>{audits ? `${breaches.length} of ${ourMoves}` : '…'}</b>
+          </a>
         </div>
         {error && <div className="px-panel notice">Could not load the games for auditing: {error}</div>}
       </header>
@@ -212,6 +279,104 @@ export function About({ manifest }: Props) {
         </div>
       </section>
 
+      <section className="about-section" id="time-record">
+        <h2 className="about-h2">The 5-second record, including our one miss</h2>
+        <div className="px-panel">
+          {audits && breaches.length > 0 && (
+            <p className="about-lead">
+              <b className="bad-text">
+                {breaches.length === 1 ? 'One move' : `${breaches.length} moves`} of ours went over the limit.
+              </b>{' '}
+              {breaches.map((b) => (
+                <span key={b.id + b.ply}>
+                  In <a href={`#/game/${b.id}/${b.ply}`}>battle {b.id}</a> (engine {b.version}), the move at ply{' '}
+                  {b.ply} took {b.ms} ms, {b.ms - LIMIT_MS} ms over.{' '}
+                </span>
+              ))}
+              That engine had no cap of its own. It searched until about 60 ms before the deadline and left the rest
+              to the UCI round-trip, and on that move the round-trip needed more. We don't hide or excuse it: the
+              verifier prints it on every run, and any new breach fails the verifier outright.
+            </p>
+          )}
+          {topWin && (
+            <p className="about-lead">
+              Our highest win, battle <a href={`#/game/${topWin.id}`}>{topWin.id}</a> against Stockfish {topWin.elo},
+              has its slowest move at {topWin.maxMs} ms, {LIMIT_MS - topWin.maxMs} ms inside the limit.
+            </p>
+          )}
+          <p className="about-lead">
+            How we time: the runner starts the clock before it sends the position and stops it when "bestmove"
+            arrives. The process hand-off and, on move 1, the new-game reset count against us too. The engine's own
+            search stops at 4700 ms, and measured from "go" to "bestmove" it answers in 4703–4705 ms.
+          </p>
+          {audits && (
+            <table className="about-table">
+              <thead>
+                <tr>
+                  <th>Engine</th>
+                  <th>How it kept time</th>
+                  <th>Our moves</th>
+                  <th>Slowest</th>
+                  <th>Over {NEAR_MISS_MS} ms</th>
+                  <th>Over 5 s</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ERAS.map((era, i) => {
+                  const next = ERAS[i + 1]?.from
+                  const inEra = audits.filter((a) => verGte(a.version, era.from) && !(next && verGte(a.version, next)))
+                  const moves = inEra.reduce((n, a) => n + a.ourMoves, 0)
+                  const slow = inEra.reduce((n, a) => Math.max(n, a.maxMs), 0)
+                  const near = inEra.reduce((n, a) => n + a.near, 0)
+                  const over = inEra.reduce((n, a) => n + a.over.length, 0)
+                  return (
+                    <tr key={era.label}>
+                      <td>{era.label}</td>
+                      <td className="about-wrap">{era.how}</td>
+                      <td>{moves || 'no games yet'}</td>
+                      <td className={slow > LIMIT_MS ? 'bad' : slow > NEAR_MISS_MS ? 'warn' : moves ? 'ok' : ''}>
+                        {moves ? `${slow} ms` : '—'}
+                      </td>
+                      <td className={near ? 'warn' : moves ? 'ok' : ''}>{moves ? near : '—'}</td>
+                      <td className={over ? 'bad' : moves ? 'ok' : ''}>{moves ? over : '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+          <p className="about-foot">
+            Guards now in place: <code>timecheck.py</code> times the engine exactly like move 1 of a game and fails
+            any move over {NEAR_MISS_MS} ms, a 150 ms safety budget under the rule. <code>verify_games.py</code>{' '}
+            fails on any move over 5 s that is not already disclosed here with its cause.
+          </p>
+          {TIMECHECK.length > 0 && (
+            <table className="about-table">
+              <thead>
+                <tr>
+                  <th>Timecheck</th>
+                  <th>Samples</th>
+                  <th>Average</th>
+                  <th>Slowest</th>
+                  <th>Over {NEAR_MISS_MS} ms</th>
+                </tr>
+              </thead>
+              <tbody>
+                {TIMECHECK.map((t) => (
+                  <tr key={t.engine}>
+                    <td>{t.engine}</td>
+                    <td>{t.samples}</td>
+                    <td>{t.avg} ms</td>
+                    <td className={t.max > NEAR_MISS_MS ? 'warn' : 'ok'}>{t.max} ms</td>
+                    <td className={t.overBudget ? 'bad' : 'ok'}>{t.overBudget}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+
       <section className="about-section">
         <h2 className="about-h2">Every battle, re-checked in your browser</h2>
         <div className="px-panel">
@@ -227,7 +392,7 @@ export function About({ manifest }: Props) {
                   <th>#</th>
                   <th>Stockfish Elo</th>
                   <th>Result</th>
-                  <th>Plies</th>
+                  <th>Moves</th>
                   <th>Legal</th>
                   <th>Positions match</th>
                   <th>Slowest think</th>
@@ -242,10 +407,12 @@ export function About({ manifest }: Props) {
                     </td>
                     <td>{a.elo}</td>
                     <td>{a.result}</td>
-                    <td>{a.plies}</td>
+                    <td>{Math.ceil(a.plies / 2)}</td>
                     <td className={a.illegal ? 'bad' : 'ok'}>{a.illegal ? `✗ ${a.illegal}` : '✓ all'}</td>
                     <td className={a.mismatched ? 'bad' : 'ok'}>{a.mismatched ? `✗ ${a.mismatched}` : '✓ all'}</td>
-                    <td>{a.maxMs} ms</td>
+                    <td className={a.maxMs > LIMIT_MS ? 'bad' : a.maxMs > NEAR_MISS_MS ? 'warn' : ''}>
+                      {a.maxMs} ms
+                    </td>
                     <td>{a.version}</td>
                   </tr>
                 ))}
@@ -263,7 +430,7 @@ export function About({ manifest }: Props) {
             {[
               'python backend/verify_games.py   # replay every saved game: legal, SAN/FEN/PGN/result consistent',
               'python backend/legalcheck.py     # fuzz the engine binary against python-chess',
-              'python backend/timecheck.py      # prove the 5 s/move limit on positions from real games',
+              'python backend/timecheck.py      # time the engine like move 1 of a game; fail over 4850 ms',
             ].join('\n')}
           </pre>
           <p className="about-foot">

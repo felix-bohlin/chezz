@@ -1,40 +1,57 @@
 import { hermitUrl } from '../pixel/render'
-import { KIND_LABEL, SENSEI_NAME, type SenseiComment } from '../story/sensei'
+import { KIND_LABEL, SENSEI_NAME, type SenseiSpeech } from '../story/sensei'
 
 interface Props {
-  comment: SenseiComment
-  onDismiss: () => void
+  /** What he says at the current ply; undefined = he dozes on his shell. */
+  speech?: SenseiSpeech
 }
 
 function pawns(cp: number): string {
   return `${cp >= 0 ? '+' : ''}${(cp / 100).toFixed(1)}`
 }
 
-/** The hermit pops up from the corner of the board to judge the move just played. */
-export function Sensei({ comment: c, onDismiss }: Props) {
-  const label = KIND_LABEL[c.kind]
-  const bad = c.kind === 'blunder' || c.kind === 'mistake'
+/** The hermit's perch beside the board: always there, speaks up on notable moves. */
+export function Sensei({ speech }: Props) {
+  const n = speech?.note
+  const label = n ? KIND_LABEL[n.kind] : null
+  const mood = n ? `sensei-${n.kind} sensei-by-${n.by}` : speech ? `sensei-${speech.occasion}` : 'sensei-idle'
   return (
-    <button
-      className={`sensei sensei-${c.kind} sensei-by-${c.by}`}
-      onClick={onDismiss}
-      aria-label={`${SENSEI_NAME}: ${c.text} (click to dismiss)`}
-    >
-      <img className="sensei-portrait" src={hermitUrl()} alt="" draggable={false} />
-      <span className="sensei-box" role="status">
-        <span className="sensei-head">
-          <span className="sensei-name">{SENSEI_NAME}</span>
-          <span className="sensei-kind">
-            {label.kanji} {label.word} <b>{label.glyph}</b>
+    <div className={`px-panel sensei-perch ${mood}`}>
+      <div className="perch-scene" aria-hidden>
+        <span className="perch-sun" />
+        <span className="perch-sea" />
+        <span className="perch-sand" />
+        <img className="perch-hermit" src={hermitUrl()} alt="" draggable={false} />
+        {!speech && <span className="perch-zzz">z z Z</span>}
+      </div>
+      {speech ? (
+        <div key={`${speech.ply}-${speech.lineId}`} className="perch-say" role="status">
+          <span className="perch-head">
+            <span className="perch-name">{SENSEI_NAME}</span>
+            {label && (
+              <span className="perch-kind">
+                {label.kanji} {label.word} <b>{label.glyph}</b>
+              </span>
+            )}
           </span>
-        </span>
-        <span className="sensei-text">{c.text}</span>
-        <span className="sensei-meta">
-          {c.by === 'us' ? 'Musashi' : 'Stockfish'} {c.san}
-          {label.glyph}
-          {bad && c.best !== '?' && <> · best was {c.best}</>} · {pawns(c.before)} → {pawns(c.after)}
-        </span>
-      </span>
-    </button>
+          <span className="perch-text">{speech.text}</span>
+          {n && (
+            <span className="perch-meta">
+              {n.by === 'us' ? 'Musashi' : 'Stockfish'} {n.san}
+              {label!.glyph}
+              {(n.kind === 'blunder' || n.kind === 'mistake') && n.best !== '?' && <> · best {n.best}</>} · {pawns(n.before)} →{' '}
+              {pawns(n.after)}
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="perch-say perch-quiet">
+          <span className="perch-head">
+            <span className="perch-name">{SENSEI_NAME}</span>
+          </span>
+          <span className="perch-text">…dozing on his turtle shell. He wakes for blunders and fine blades.</span>
+        </div>
+      )}
+    </div>
   )
 }

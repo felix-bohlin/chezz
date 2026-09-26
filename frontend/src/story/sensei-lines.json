@@ -59,5 +59,21 @@
   {"id":"s.sf.brilliant.02","by":"stockfish","kind":"brilliant","text":"Oh dear. {san}!! That move has teeth."},
   {"id":"s.sf.brilliant.03","by":"stockfish","kind":"brilliant","text":"Hmph! {san}!! The fish has fangs. Run, Ieyasu, run!"},
   {"id":"s.sf.brilliant.04","by":"stockfish","kind":"brilliant","text":"A beautiful blade. Pointed at us. {san}!!"},
-  {"id":"s.sf.brilliant.05","by":"stockfish","kind":"brilliant","text":"{san}!! Even an old hermit must bow. Briefly. Then we fight."}
+  {"id":"s.sf.brilliant.05","by":"stockfish","kind":"brilliant","text":"{san}!! Even an old hermit must bow. Briefly. Then we fight."},
+
+  {"id":"s.intro.01","kind":"intro","text":"Ho ho. Sit, sit. Watch the boy and maybe you learn something."},
+  {"id":"s.intro.02","kind":"intro","text":"Another battle? Wake me if somebody blunders."},
+  {"id":"s.intro.03","kind":"intro","text":"Musashi against the fish again. Good. I brought tea."},
+  {"id":"s.intro.04","kind":"intro","text":"Eyes open, feet quiet. Let us see what you learned, boy."},
+  {"id":"s.intro.05","kind":"intro","text":"Ahh, the pursuers are coming. Perfect weather for a nap on the beach."},
+  {"id":"s.victory.01","kind":"victory","text":"HOHOHO! The fish is fried! Tonight, we feast!"},
+  {"id":"s.victory.02","kind":"victory","text":"Victory. I allow one nap as a reward. A short one."},
+  {"id":"s.victory.03","kind":"victory","text":"You see? Three hundred years of my wisdom, in one boy."},
+  {"id":"s.victory.04","kind":"victory","text":"Heh heh. Tell the fish it can come back when it has grown legs."},
+  {"id":"s.defeat.01","kind":"defeat","text":"Hmph. The fish eats today. Tomorrow, we train at dawn."},
+  {"id":"s.defeat.02","kind":"defeat","text":"Defeat is a teacher. A rude one. Listen to it anyway."},
+  {"id":"s.defeat.03","kind":"defeat","text":"Even the turtle falls on its back sometimes. Get up, boy."},
+  {"id":"s.draw.01","kind":"draw","text":"A draw. Like sharing the last rice cake. Nobody is happy."},
+  {"id":"s.draw.02","kind":"draw","text":"Half a victory, half a nap. Hmm. Acceptable."},
+  {"id":"s.draw.03","kind":"draw","text":"Neither blade drew blood. Next time, sharper."}
 ]
