@@ -20,7 +20,8 @@ import chess
 import chess.engine
 import chess.pgn
 
-from common import ENGINE, GAMES, STOCKFISH, git_commit, load_games, next_game_id, next_ladder_elo, write_indexes
+from common import (ADJUDICATION_RULE, ENGINE, GAMES, STOCKFISH, draw_adjudication_due, git_commit, load_games,
+                    next_game_id, next_ladder_elo, write_indexes)
 from verify_games import NEAR_MISS_MS, verify
 
 MOVE_TIME = 5.0  # seconds per move, both players (competition rule)
@@ -177,6 +178,10 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
                 ev = f"{cp:+d}" if cp is not None else "  ?"
                 print(f"{len(moves):3d}. {who:2s} {san:8s} eval(w) {ev:>6s}  d{res.info.get('depth', '?')}  {ms}ms",
                       flush=True)
+            if not board.is_game_over(claim_draw=True) and draw_adjudication_due(moves):
+                termination = "adjudicated_draw"
+                print(f"draw adjudicated at ply {len(moves)}: {ADJUDICATION_RULE}", flush=True)
+                break
     finally:
         ours.quit()
         sf.quit()
@@ -185,6 +190,8 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         result = "0-1" if our_color == chess.WHITE else "1-0"
     elif termination == "stockfish-error":
         result = "1-0" if our_color == chess.WHITE else "0-1"
+    elif termination == "adjudicated_draw":
+        result = "1/2-1/2"
     else:
         outcome = board.outcome(claim_draw=True)
         result = outcome.result() if outcome else "1/2-1/2"
@@ -240,6 +247,8 @@ def play_game(elo: int, our_color: chess.Color, verbose: bool) -> pathlib.Path:
         "startFen": chess.STARTING_FEN,
         "ourMaxMoveMs": max((m["timeMs"] for m in moves if m["by"] == "us"), default=0),
         "timeViolations": violations,
+        **({"adjudication": {"rule": ADJUDICATION_RULE, "atPly": len(moves)}}
+           if termination == "adjudicated_draw" else {}),
         "moves": moves,
         "pgn": str(pgn_game),
     }

@@ -28,7 +28,8 @@ One JSON file per game — `games/NNNN_elo-XXXX_{win|loss|draw}.json` — plus a
   "id": "0007", "date": "2026-09-25T14:03:00Z",
   "stockfishElo": 1600, "stockfishVersion": "Stockfish 19", "moveTimeSec": 5.0,
   "ourColor": "white", "result": "1-0", "winner": "us",        // us | stockfish | draw
-  "termination": "checkmate",                                  // python-chess Termination name, or engine-error
+  "termination": "checkmate",                                  // python-chess Termination name, engine-error / engine-timeout / stockfish-error, or adjudicated_draw
+  // "adjudication": { "rule": "...", "atPly": 122 }           // only on adjudicated_draw games
   "engine": { "name": "musashi", "version": "0.1.0", "commit": "92ec583-dirty" },
   "startFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
   "moves": [
@@ -88,7 +89,10 @@ then unzip into `backend/tools/stockfish/`. Minimum `UCI_Elo` is 1320.
   (catches a null move); the runner replays every game it saves with `verify_games.verify` and prints
   `verify … ok|FAIL`; and `python backend/legalcheck.py` fuzzes the engine over edge cases, all saved-game
   positions and random playouts. Run legalcheck after any change to move generation, UCI parsing or search.
-- A draw is not a win; the ladder only advances on `winner: "us"` (our engine uses contempt to avoid draws).
+- A draw is not a win; the ladder only advances on `winner: "us"` (ladder games run at contempt 60 to avoid draws).
+- Dead draws are adjudicated, not shuffled out: from ply 80, if Stockfish reports |eval| ≤ 15 cp (no mate) on
+  10 consecutive moves, the runner ends the game as `adjudicated_draw` (rule in `backend/common.py`, re-checked by
+  `verify_games.py`). The game is saved and replayable up to that point like any other draw.
 - Every game saved with its Elo (runner does this) and replayable on a graphical board (frontend).
 - After **every** game: run the `analyze-game` skill, which runs **both** analysis sub-agents.
 

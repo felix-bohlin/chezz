@@ -17,6 +17,28 @@ PROGRESS = ROOT / "PROGRESS.md"
 # (the prize is the highest win, and 3190 is Stockfish's maximum UCI_Elo).
 LADDER = [1320, 1400, 1500, 2500, 2700, 2900, 3100, 3190]
 
+# Draw adjudication: a game Stockfish itself scores as dead level for a long stretch is stopped as a draw
+# instead of being shuffled out to a 50-move or repetition draw (game 15 ran 366 plies that way). Stockfish's
+# eval is the referee: it searches at full strength and only then weakens its move choice, while our own eval
+# was badly optimistic in exactly these endings (+2 to +5 for 150 plies of game 15). Backtested on games
+# 1-15: fires only in the dead draws 12 and 15, never in a decisive game.
+ADJUDICATE_MIN_PLY = 80      # not before move 40
+ADJUDICATE_SF_MOVES = 10     # this many consecutive Stockfish moves (20 plies)...
+ADJUDICATE_MAX_CP = 15       # ...each reporting |eval| <= 15 cp and no mate score
+ADJUDICATION_RULE = (f"Stockfish's reported eval within ±{ADJUDICATE_MAX_CP} cp (no mate score) on "
+                     f"{ADJUDICATE_SF_MOVES} consecutive Stockfish moves, from ply {ADJUDICATE_MIN_PLY} on")
+
+
+def draw_adjudication_due(moves: list[dict]) -> bool:
+    """True when the draw-adjudication rule holds at the end of `moves` (the game's move records)."""
+    if len(moves) < ADJUDICATE_MIN_PLY:
+        return False
+    sf = [m for m in moves if m["by"] == "stockfish"][-ADJUDICATE_SF_MOVES:]
+    return len(sf) == ADJUDICATE_SF_MOVES and all(
+        m.get("evalCp") is not None and m.get("mate") is None and abs(m["evalCp"]) <= ADJUDICATE_MAX_CP
+        for m in sf
+    )
+
 
 def git_commit() -> str:
     try:

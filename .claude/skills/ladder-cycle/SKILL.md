@@ -26,6 +26,8 @@ See CLAUDE.md for commands and PATH setup.
    `RESULT` line or the `.err` file shows a Traceback, e.g. in bash:
    `until grep -q '^RESULT' LOG || grep -q Traceback LOG.err; do sleep 10; done; tail -n 2 LOG; tail -n 5 LOG.err`
    Don't poll manually. The RESULT line reads `RESULT <result> winner=<us|stockfish|draw> ... file=games/<STEM>.json`.
+   Dead-drawn games stop by themselves (`termination=adjudicated_draw`, see CLAUDE.md), so a long quiet game
+   doesn't need to be killed by hand; treat an adjudicated draw like any other draw: analyze, improve, retry.
    Never run selfplay or builds while a ladder game is running (CPU contention and a locked exe).
 
 ## 2. Analyze

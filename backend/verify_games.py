@@ -19,7 +19,7 @@ import sys
 import chess
 import chess.pgn
 
-from common import GAMES, load_games
+from common import ADJUDICATION_RULE, GAMES, draw_adjudication_due, load_games
 
 MOVE_LIMIT_MS = 5000
 # Anything slower leaves less than 150 ms between us and a breach: reported, so regressions show early.
@@ -73,6 +73,18 @@ def verify(g: dict) -> tuple[list[str], list[str]]:
     outcome = board.outcome(claim_draw=True)
     if term in ("engine-error", "engine-timeout", "stockfish-error"):
         warnings.append(f"ended by {term}")
+    elif term == "adjudicated_draw":
+        # Re-derive the adjudication from the recorded evals: the rule must hold exactly at the last move and
+        # at no earlier ply (the runner stops at the first ply it holds), and the game must not already be over.
+        if g["result"] != "1/2-1/2":
+            errors.append(f"adjudicated_draw recorded with result {g['result']}")
+        if outcome is not None:
+            errors.append(f"adjudicated_draw but the final position is already over ({outcome.termination.name})")
+        if not draw_adjudication_due(g["moves"]):
+            errors.append("adjudicated_draw but the adjudication rule does not hold at the final move")
+        elif any(draw_adjudication_due(g["moves"][:n]) for n in range(len(g["moves"]))):
+            errors.append("adjudicated_draw but the rule already held earlier; the game should have stopped there")
+        warnings.append(f"draw adjudicated at ply {len(g['moves'])}: {ADJUDICATION_RULE}")
     elif outcome is None:
         errors.append(f"game recorded as {g['result']} ({term}) but the final position is not over")
     else:
