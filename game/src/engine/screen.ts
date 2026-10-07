@@ -1,5 +1,6 @@
-// Two-layer screen: the world is drawn into a small low-res canvas and blown up by an integer
-// factor (crisp pixels, no shimmer); UI text is drawn afterwards at full device resolution.
+// Layered screen: the world is drawn into a small low-res canvas and blown up by an integer factor
+// (crisp pixels, no shimmer) onto the world canvas, which carries a CSS colour grade; UI text is
+// drawn on a separate full-resolution canvas above it, ungraded.
 
 import type { Ctx } from './pixel'
 
@@ -9,6 +10,10 @@ const TARGET_H = 250
 
 export class Screen {
   readonly el: HTMLCanvasElement
+  /** World display context (graded). */
+  readonly wctx: Ctx
+  readonly uiEl: HTMLCanvasElement
+  /** UI context, full resolution, cleared every frame. */
   readonly dctx: Ctx
   readonly low: HTMLCanvasElement
   readonly ctx: Ctx
@@ -21,7 +26,9 @@ export class Screen {
 
   constructor(el: HTMLCanvasElement) {
     this.el = el
-    this.dctx = el.getContext('2d')!
+    this.wctx = el.getContext('2d')!
+    this.uiEl = (document.getElementById('ui') as HTMLCanvasElement | null) ?? document.createElement('canvas')
+    this.dctx = this.uiEl.getContext('2d')!
     this.low = document.createElement('canvas')
     this.ctx = this.low.getContext('2d')!
     this.resize()
@@ -42,18 +49,30 @@ export class Screen {
     const H = Math.round(window.innerHeight * this.dpr)
     this.el.width = W
     this.el.height = H
+    this.uiEl.width = W
+    this.uiEl.height = H
     this.scale = Math.max(1, Math.round(Math.min(W / TARGET_W, H / TARGET_H)))
     this.w = Math.ceil(W / this.scale)
     this.h = Math.ceil(H / this.scale)
     this.low.width = this.w
     this.low.height = this.h
     this.ctx.imageSmoothingEnabled = false
+    this.wctx.imageSmoothingEnabled = false
     this.dctx.imageSmoothingEnabled = false
   }
 
+  /** Colour grade for the world layer (a CSS filter; only touched when it changes). */
+  private grade = ''
+  setGrade(filter: string): void {
+    if (filter === this.grade) return
+    this.grade = filter
+    this.el.style.filter = filter
+  }
+
   present(): void {
-    this.dctx.imageSmoothingEnabled = false
-    this.dctx.drawImage(this.low, 0, 0, this.w * this.scale, this.h * this.scale)
+    this.wctx.imageSmoothingEnabled = false
+    this.wctx.drawImage(this.low, 0, 0, this.w * this.scale, this.h * this.scale)
+    this.dctx.clearRect(0, 0, this.W, this.H)
   }
 
   /** CSS pixels → device pixels, for UI sizes. */

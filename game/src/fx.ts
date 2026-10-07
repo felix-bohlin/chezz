@@ -3,7 +3,7 @@
 
 import { dot, ellipse, px, type Ctx } from './engine/pixel'
 import { rng } from './engine/rng'
-import { idx, T, TILE, type World } from './world/layout'
+import { idx, isWet, T, TILE, type World } from './world/layout'
 
 interface Puff {
   x: number
@@ -50,18 +50,18 @@ export class Fx {
         const t = world.tiles[idx(x, y)]
         if (t !== T.Grass) continue
         const wet = [world.tiles[idx(x + 1, y)], world.tiles[idx(x - 1, y)], world.tiles[idx(x, y + 1)], world.tiles[idx(x, y - 1)]].some(
-          (n) => n === T.Water || n === T.Paddy,
+          (n) => isWet(n) || n === T.Paddy,
         )
         if (wet) near.push({ x, y })
       }
-    for (let i = 0; i < 46; i++) {
+    for (let i = 0; i < 140; i++) {
       const t = near[Math.floor(this.r() * near.length)]
       const x = t.x * TILE + this.r() * TILE
       const y = t.y * TILE + this.r() * TILE
       this.fireflies.push({ x, y, hx: x, hy: y, phase: this.r() * 10, speed: 0.4 + this.r() * 0.6 })
     }
     const flowers = world.props.filter((p) => p.kind === 'hydrangea' || p.kind === 'iris')
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 24; i++) {
       const p = flowers[Math.floor(this.r() * flowers.length)]
       const x = p.x * TILE + 8
       const y = p.y * TILE
@@ -123,7 +123,7 @@ export class Fx {
         const x = Math.floor((view.x + this.r() * view.w) / TILE)
         const y = Math.floor((view.y + this.r() * view.h) / TILE)
         if (x < 0 || y < 0 || x >= world.w || y >= world.h) continue
-        if (world.tiles[idx(x, y)] !== T.Water) continue
+        if (!isWet(world.tiles[idx(x, y)])) continue
         this.splash(x * TILE + 8, y * TILE + 10)
         break
       }

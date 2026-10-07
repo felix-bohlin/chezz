@@ -5,7 +5,7 @@ import type { Sprite } from '../art/sprite'
 import { turtleSprite } from '../art/turtle'
 import { input } from '../engine/input'
 import { tileOf } from '../world/grid'
-import { idx, T, TILE, type Dir } from '../world/layout'
+import { idx, isWet, TILE, type Dir } from '../world/layout'
 import type { Game } from '../game'
 
 const WALK = 46
@@ -66,7 +66,7 @@ export class Player {
 
     const t = tileOf(this.x, this.y)
     const wasSwimming = this.swimming
-    this.swimming = g.world.tiles[idx(t.x, t.y)] === T.Water
+    this.swimming = isWet(g.world.tiles[idx(t.x, t.y)])
     if (this.swimming && !wasSwimming) {
       g.fx.splash(this.x, this.y)
       g.speech.floater(this.x, this.y - 10, '*plop*', '#cfe8f0')
@@ -79,9 +79,9 @@ export class Player {
       }
     }
     // The map edge: Roshi's voice carries a long way.
-    if ((t.x <= 1 || t.x >= g.world.w - 2) && g.time - this.lastEdgeNag > 8) {
+    if ((t.x <= 1 || t.x >= g.world.w - 2 || t.y >= g.world.h - 2) && g.time - this.lastEdgeNag > 8) {
       this.lastEdgeNag = g.time
-      g.speech.say(this, '(Roshi, faintly, from very far away) No sake, no coming home! Hohoho!', 4)
+      g.speech.say(this, t.y >= g.world.h - 2 ? '(Roshi, from the island) Wrong way! The sake is in TOWN! Hohoho!' : '(Roshi, faintly, from very far away) No sake, no coming home! Hohoho!', 4)
     }
   }
 

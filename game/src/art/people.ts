@@ -7,7 +7,7 @@
 
 import { canvas, dot, ellipse, flipX, outline, px, type Ctx } from '../engine/pixel'
 import type { Dir } from '../world/layout'
-import type { Look, Pose } from '../sim/cast'
+import type { Look, Pose } from '../sim/types'
 import type { Sprite } from './sprite'
 
 export type DrawPose = Pose | 'walk'
@@ -86,6 +86,17 @@ function drawPerson(ctx: Ctx, look: Look, view: 'down' | 'up' | 'left', pose: Dr
       P(px0 + 1, headTop - 7, 4, 7, '#2f3f73')
       D(px0 + 2, headTop - 5, '#f4f1ea')
       D(px0 + 3, headTop - 4, '#f4f1ea')
+    }
+    if (extras.has('shell')) {
+      if (side) {
+        ellipse(ctx, OX + 11.5, OY + bodyTop + 3, 3.5, 5, '#8a68b8')
+        ellipse(ctx, OX + 12, OY + bodyTop + 3, 2, 3.5, '#5a4088')
+      } else {
+        P(1, bodyTop - 1, 2, hemBottom - bodyTop, '#8a68b8')
+        P(13, bodyTop - 1, 2, hemBottom - bodyTop, '#8a68b8')
+        P(1, bodyTop + 2, 2, 1, '#5a4088')
+        P(13, bodyTop + 2, 2, 1, '#5a4088')
+      }
     }
     if (extras.has('backpack')) {
       if (side) {
@@ -202,6 +213,35 @@ function drawPerson(ctx: Ctx, look: Look, view: 'down' | 'up' | 'left', pose: Dr
     P(x, obiY + 3, 3, 1, STRAW[0])
   }
 
+  if (extras.has('hakama') && !sitting) {
+    const top = obiY + (kid ? 1 : 2)
+    const x0 = side ? 4 : 3
+    const w = side ? 8 : 10
+    P(x0, top, w, 22 - top, legs)
+    for (let x = x0 + 1; x < x0 + w; x += 3) P(x, top + 1, 1, 21 - top, look.robeShade)
+    if (walking && step % 2 === 1) P(x0 + (step === 1 ? 0 : w - 2), 20, 2, 2, legs)
+  }
+  if (extras.has('kesa')) {
+    if (side) P(6, bodyTop, 2, hemBottom - bodyTop, '#c9a040')
+    else
+      for (let i = 0; i <= hemBottom - bodyTop - 1; i++) {
+        const x = view === 'down' ? 5 + Math.floor(i * 0.7) : 10 - Math.floor(i * 0.7)
+        P(x, bodyTop + i, 2, 1, i % 3 === 2 ? '#a07a28' : '#c9a040')
+      }
+  }
+  if (extras.has('swords')) {
+    if (side) {
+      P(1, obiY, 5, 1, '#1a1220')
+      D(5, obiY, '#e0b13c')
+      P(2, obiY + 1, 4, 1, '#2a2233')
+      P(9, obiY + 1, 5, 1, '#2a2233')
+    } else if (view === 'down') {
+      P(11, obiY - 1, 4, 1, '#1a1220')
+      D(11, obiY - 1, '#e0b13c')
+      P(12, obiY + 1, 3, 1, '#2a2233')
+    } else P(11, obiY + 1, 4, 1, '#2a2233')
+  }
+
   // ---- arms (sleeves + hands), unless the pose holds something with them ----
   const handsBusy = ['chant', 'conch', 'call', 'serve', 'alms', 'carry', 'meditate', 'plant'].includes(pose)
   const sleeveRows = kid ? 3 : 4
@@ -227,8 +267,41 @@ function drawPerson(ctx: Ctx, look: Look, view: 'down' | 'up' | 'left', pose: Dr
   // ---- head ----
   drawHead(P, D, (x, y) => ctx.clearRect(OX + x, OY + y, 1, 1), look, view, headTop, pose)
 
+  if (extras.has('beard') && view !== 'up') {
+    const white = '#f6f2e8'
+    const grey = '#c9c1b0'
+    if (side) {
+      P(3, headTop + 6, 4, 3, white)
+      P(4, headTop + 9, 3, 2, white)
+      D(5, headTop + 8, grey)
+    } else {
+      P(5, headTop + 6, 6, 3, white)
+      P(6, headTop + 9, 4, 2, white)
+      D(7, headTop + 10, white)
+      D(8, headTop + 11, white)
+      D(7, headTop + 8, grey)
+      D(9, headTop + 9, grey)
+    }
+  }
+  if (extras.has('shades') && view !== 'up') {
+    if (side) {
+      P(3, headTop + 4, 4, 1, '#d23c2a')
+      P(4, headTop + 5, 2, 1, '#3fae5a')
+    } else {
+      P(5, headTop + 4, 6, 1, '#d23c2a')
+      P(5, headTop + 5, 2, 1, '#3fae5a')
+      P(9, headTop + 5, 2, 1, '#3fae5a')
+      D(5, headTop + 5, '#b8f0b0')
+    }
+  }
+
   // ---- in front of the body ----
   if (view === 'up') {
+    if (extras.has('shell')) {
+      ellipse(ctx, OX + 8, OY + bodyTop + 3, 5.5, 5.5, '#8a68b8')
+      ellipse(ctx, OX + 8, OY + bodyTop + 3, 3, 3, '#5a4088')
+      P(7, bodyTop - 2, 2, 11, '#5a4088')
+    }
     if (extras.has('backpack')) {
       P(3, headTop - 2, 10, bodyTop - headTop + 8, '#7a5232')
       P(3, headTop - 2, 10, 1, '#a87a46')
@@ -280,6 +353,30 @@ function drawPerson(ctx: Ctx, look: Look, view: 'down' | 'up' | 'left', pose: Dr
         } else {
           P(x, handY - 1, 1, FEET - handY + 1, WOOD)
           P(x - 1, FEET, 3, 1, STEEL)
+        }
+      }
+      break
+    }
+    case 'hammer': {
+      const up = frame === 0
+      const MALLET = '#7a5232'
+      if (side) {
+        if (up) {
+          line(ctx, OX + 7, OY + handY, OX + 4, OY + headTop - 2, WOOD)
+          P(2, headTop - 5, 4, 3, MALLET)
+        } else {
+          line(ctx, OX + 6, OY + handY, OX + 1, OY + handY + 4, WOOD)
+          P(-1, handY + 3, 3, 4, MALLET)
+        }
+        D(6, handY, SKIN)
+      } else {
+        const x = view === 'down' ? 13 : 2
+        if (up) {
+          P(x, headTop - 2, 1, handY - headTop + 3, WOOD)
+          P(x - 1, headTop - 5, 3, 3, MALLET)
+        } else {
+          P(x, handY - 1, 1, 5, WOOD)
+          P(x - 1, handY + 4, 3, 3, MALLET)
         }
       }
       break

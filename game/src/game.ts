@@ -2,7 +2,8 @@
 //
 // Frame order: ground → water shimmer → koi → ripples → everything that stands, sorted by its feet
 // (buildings, props, villagers, animals, the turtle) → birds in flight → smoke/butterflies →
-// night light map (multiply) → glowing windows, flames, fireflies → full-res UI on top.
+// mist → rain → light map (multiply: the hour, the clouds, lanterns) → glowing windows, flames,
+// fireflies → lightning → full-res UI on top. The world canvas carries a CSS colour grade.
 
 import { buildingArt, type BuildingArt } from './art/buildings'
 import { Ground } from './art/ground'
@@ -12,22 +13,27 @@ import { propArt, stallSprite } from './art/props'
 import type { Sprite } from './art/sprite'
 import { unlockAudio } from './audio/engine'
 import { startMusic, stopMusic } from './audio/music'
+import { playBell } from './audio/bell'
+import { playThunder, setRain } from './audio/ambience'
 import { input, onTap } from './engine/input'
-import { canvas, ellipse, fromGrid, px, type Ctx } from './engine/pixel'
+import { canvas, ellipse, fromGrid, outline, px, type Ctx } from './engine/pixel'
 import { hash, pick, rng } from './engine/rng'
 import type { Screen } from './engine/screen'
 import { Animal, spawnAnimals } from './entities/animals'
 import { Player } from './entities/player'
 import { Villager } from './entities/villager'
 import { Fx } from './fx'
-import { ambientAt, darknessAt, Lighting } from './lighting'
+import { ambientAt, darknessOf, Lighting } from './lighting'
 import { CAST } from './sim/cast'
+import { makeExtras } from './sim/extras'
 import { Clock } from './sim/clock'
 import { FONT_BODY, PALETTE } from './ui/draw'
-import { Dialog, drawHelp, drawHint, drawHud, drawMap, drawTitle, type Hit, type MapMarker } from './ui/overlays'
+import { Dialog, drawBanner, drawHelp, drawHint, drawHud, drawMap, drawTitle, type Hit, type MapMarker } from './ui/overlays'
 import { Speech, type Speaker } from './ui/speech'
 import { makeGrid, tileFeet, tileOf, type Grid } from './world/grid'
-import { buildWorld, idx, propColumns, T, TILE, type Building, type Prop, type World } from './world/layout'
+import { idx, propTiles, T, TILE, type Building, type Prop, type World } from './world/layout'
+import { buildWorld } from './world/town'
+import { Weather, type WeatherMode } from './weather'
 
 interface Static {
   img: HTMLCanvasElement
@@ -39,6 +45,7 @@ interface Static {
   building?: { b: Building; art: BuildingArt }
   prop?: Prop
   glow?: { x: number; y: number; r: number; color: string; flame?: boolean }
+  smoke?: { x: number; y: number }
 }
 
 interface Koi {
@@ -50,8 +57,46 @@ interface Koi {
   spot: string
 }
 
+const WEATHER_SAY: Record<WeatherMode, string> = {
+  auto: '(the sky goes back to doing as it pleases)',
+  rain: '(it starts to rain. Of course it does.)',
+  storm: '(the gods are arguing again)',
+  mist: '(a mist rolls in off the sea. Anything could be in it.)',
+  clear: '(the clouds part. Briefly. Suspiciously.)',
+}
+
+/** Oiled-paper umbrellas (bangasa), plain and patched. */
+const UMBRELLA_COLORS = [
+  ['#7a3a2a', '#9a5236', '#5a2a1e'],
+  ['#5e5a48', '#7a7460', '#423e32'],
+  ['#3e4a5a', '#56647a', '#2c3442'],
+  ['#8a6a3a', '#a8864e', '#64492a'],
+]
+const umbrellaCache = new Map<number, HTMLCanvasElement>()
+function umbrella(i: number): HTMLCanvasElement {
+  const hit = umbrellaCache.get(i)
+  if (hit) return hit
+  const [base, light, dark] = UMBRELLA_COLORS[i]
+  const [c, ctx] = canvas(19, 14)
+  // Canopy: a shallow cone with ribs.
+  const rows = [3, 7, 11, 15, 17]
+  rows.forEach((w, j) => {
+    const x0 = 9 - Math.floor(w / 2)
+    px(ctx, x0, 1 + j, w, 1, j < 2 ? light : base)
+    for (let x = x0 + 1; x < x0 + w - 1; x += 3) px(ctx, x, 1 + j, 1, 1, dark)
+  })
+  px(ctx, 1, 6, 17, 1, dark)
+  // A patch on the grey one.
+  if (i === 1) px(ctx, 11, 3, 3, 2, '#8a7a5a')
+  px(ctx, 9, 0, 1, 1, dark)
+  px(ctx, 9, 7, 1, 7, '#3a2a1c')
+  outline(c, '#1a1220')
+  umbrellaCache.set(i, c)
+  return c
+}
+
 const HINT =
-  'WASD / arrows: walk · Shift: hurry · Space: hide in shell · E: talk & look · M: map · [ ]: time speed · H: help'
+  'WASD / arrows: walk · Shift: hurry · Space: hide in shell · E: talk & look · M: map · [ ]: time speed · R: weather · H: help'
 
 export class Game {
   readonly screen: Screen
@@ -62,6 +107,7 @@ export class Game {
   readonly fx: Fx
   readonly speech = new Speech()
   readonly lighting = new Lighting()
+  readonly weather = new Weather()
   readonly player: Player
   readonly villagers: Villager[]
   readonly animals: Animal[]
@@ -89,6 +135,13 @@ export class Game {
   private fpsN = 0
   private fps = 0
   private r = rng(99)
+  private district = ''
+  private bannerT = 0
+  private lastMinute = -1
+  /** A merchant ship sailing across the bay now and then. */
+  private sail: { x: number; y: number; speed: number } | null = null
+  private sailIn = 20
+  private frameDt = 0
 
   constructor(screen: Screen) {
     this.screen = screen
@@ -96,10 +149,10 @@ export class Game {
     this.grid = makeGrid(this.world)
     this.ground = new Ground(this.world)
     this.fx = new Fx(this.world)
-    const start = tileFeet({ x: 4, y: 25 })
+    const start = tileFeet(this.world.start)
     this.player = new Player(start.x, start.y)
-    this.player.dir = 'right'
-    this.villagers = CAST.map((s) => new Villager(s, this))
+    this.player.dir = 'up'
+    this.villagers = [...CAST, ...makeExtras()].map((s) => new Villager(s, this))
     for (const v of this.villagers) {
       const id = v.spec.home.startsWith('door:') ? v.spec.home.slice(5) : v.spec.home
       this.residents.set(id, [...(this.residents.get(id) ?? []), v])
@@ -126,6 +179,20 @@ export class Game {
     return x > this.camX - margin && x < this.camX + this.screen.w + margin && y > this.camY - margin && y < this.camY + this.screen.h + margin
   }
 
+  /** A spot on a building's roof ridge for a perching crow: ground point (x, y) and height z. */
+  roofPerch(id: string, k: number): { x: number; y: number; z: number } | null {
+    const st = this.statics.find((s) => s.building?.b.id === id)
+    if (!st) return null
+    const img = st.img
+    const col = Math.floor(img.width * (0.25 + k * 0.5))
+    const data = img.getContext('2d')!.getImageData(col, 0, 1, img.height).data
+    let top = 0
+    while (top < img.height && data[top * 4 + 3] === 0) top++
+    if (top >= img.height) return null
+    const y = st.sortY
+    return { x: st.x + col, y, z: y - (st.y + top) + 1 }
+  }
+
   // ---------- setup ----------
 
   private buildStatics(): void {
@@ -136,25 +203,35 @@ export class Game {
       this.statics.push({ img: art.img, x, y, sortY: (b.y + b.h) * TILE - 1, fade: true, building: { b, art } })
     }
     const fences = new Set(this.world.props.filter((p) => p.kind === 'fence').map((p) => `${p.x},${p.y}`))
+    const walls = new Set(this.world.props.filter((p) => p.kind === 'wall').map((p) => `${p.x},${p.y}`))
+    const WALL_JOINS = new Set(['tower', 'gate', 'gateSide'])
+    const wallLike = (x: number, y: number) => {
+      if (walls.has(`${x},${y}`)) return true
+      if (x < 0 || y < 0 || x >= this.world.w || y >= this.world.h) return false
+      const bi = this.grid.buildingAt[idx(x, y)]
+      return !!bi && WALL_JOINS.has(this.world.buildings[bi - 1].kind)
+    }
     for (const p of this.world.props) {
       let mask = 0
-      if (p.kind === 'fence') {
-        if (fences.has(`${p.x - 1},${p.y}`)) mask |= 1
-        if (fences.has(`${p.x + 1},${p.y}`)) mask |= 2
-        if (fences.has(`${p.x},${p.y - 1}`)) mask |= 4
-        if (fences.has(`${p.x},${p.y + 1}`)) mask |= 8
+      if (p.kind === 'fence' || p.kind === 'wall') {
+        const has = p.kind === 'fence' ? (x: number, y: number) => fences.has(`${x},${y}`) : wallLike
+        if (has(p.x - 1, p.y)) mask |= 1
+        if (has(p.x + 1, p.y)) mask |= 2
+        if (has(p.x, p.y - 1)) mask |= 4
+        if (has(p.x, p.y + 1)) mask |= 8
       }
       const art = propArt(p, Math.floor(hash(p.x, p.y, 1) * 1000), mask)
       if (!art) continue
       const ax = p.x * TILE + (p.w ?? 1) * 8
       const ay = p.y * TILE + 14
-      const low = p.kind === 'iris' || p.kind === 'reeds'
+      const low = p.kind === 'iris' || p.kind === 'reeds' || p.kind === 'redbridge'
       this.statics.push({
+        smoke: art.smoke ? { x: ax + art.smoke.x, y: ay + art.smoke.y } : undefined,
         img: art.sprite.img,
         x: ax - art.sprite.ax,
         y: ay - art.sprite.ay,
         sortY: low ? ay - 6 : ay,
-        fade: art.sprite.img.height > 30,
+        fade: art.sprite.img.height > 30 && p.kind !== 'wall',
         prop: p,
         glow: art.glow ? { ...art.glow, x: ax + art.glow.x, y: ay + art.glow.y } : undefined,
       })
@@ -162,11 +239,11 @@ export class Game {
   }
 
   private spawnKoi(): void {
-    const pond = this.world.areas.pond
+    const pond = this.world.areas.templePond
     const colors = ['#f08a3a', '#f4f1ea', '#e8604a', '#f2b030', '#f4f1ea']
     for (let i = 0; i < 5; i++) {
-      const x = (pond.x + 4 + i * 1.5) * TILE
-      const y = (pond.y + 6) * TILE
+      const x = (pond.x + 3 + i * 1.2) * TILE
+      const y = (pond.y + 3.5) * TILE
       this.koi.push({ x, y, tx: x, ty: y, color: colors[i], spot: i % 2 ? '#e8604a' : '#2a2233' })
     }
   }
@@ -188,6 +265,7 @@ export class Game {
 
   update(dt: number): void {
     this.time += dt
+    this.frameDt = dt
     this.fpsT += dt
     this.fpsN++
     if (this.fpsT > 0.5) {
@@ -221,6 +299,7 @@ export class Game {
     if (input.pressed('BracketRight', 'Equal', 'NumpadAdd')) this.clock.faster()
     if (input.pressed('BracketLeft', 'Minus', 'NumpadSubtract')) this.clock.slower()
     if (input.pressed('KeyP')) this.clock.paused = !this.clock.paused
+    if (input.pressed('KeyR')) this.speech.floater(this.player.x, this.player.y - 28, WEATHER_SAY[this.weather.cycle()], '#c8d4dc')
 
     if (this.dialog) {
       this.dialog.update(dt)
@@ -245,6 +324,17 @@ export class Game {
     this.fx.update(dt, this.world, this.clock.minutes, { x: this.camX, y: this.camY, w: this.screen.w, h: this.screen.h })
     this.speech.update(dt)
     this.emitSmoke(dt)
+    this.updateDistrict(dt)
+    this.updateSail(frozen ? 0 : dt * Math.max(1, this.clock.speed / 4))
+    this.weather.update(dt, dmin, this.clock.day, this.clock.minutes)
+    if (this.weather.thunder && this.musicOn) playThunder()
+    setRain(this.weather.rain, this.musicOn && !this.title)
+    this.screen.setGrade(this.weather.grade())
+    // Temple bells at dawn and dusk.
+    const m = Math.floor(this.clock.minutes)
+    if (this.lastMinute >= 0 && m !== this.lastMinute)
+      for (const bell of [6 * 60, 18 * 60]) if (this.lastMinute < bell && m >= bell && m - this.lastMinute < 30) this.tollBell()
+    this.lastMinute = m
     // Ohana scatters grain while feeding.
     for (const v of this.villagers)
       if (!v.inside && v.entry?.doing.kind === 'area' && v.entry.doing.pose === 'feed' && this.r() < adt * 3) this.fx.grain(v.x - 6, v.y - 10)
@@ -256,6 +346,41 @@ export class Game {
     this.camX += (tx - this.camX) * k
     this.camY += (ty - this.camY) * k
     this.clampCamera()
+  }
+
+  private updateDistrict(dt: number): void {
+    this.bannerT += dt
+    const t = tileOf(this.player.x, this.player.y)
+    const d = this.world.districts.find((r) => t.x >= r.x && t.y >= r.y && t.x < r.x + r.w && t.y < r.y + r.h)
+    const name = d?.name ?? 'Kumoi'
+    if (name !== this.district) {
+      this.district = name
+      this.bannerT = 0
+    }
+  }
+
+  private updateSail(dt: number): void {
+    if (!this.sail) {
+      this.sailIn -= dt
+      if (this.sailIn <= 0) {
+        const fromLeft = this.r() < 0.5
+        this.sail = { x: fromLeft ? -120 : this.world.w * TILE + 120, y: (this.world.h - 2) * TILE, speed: fromLeft ? 11 : -11 }
+      }
+      return
+    }
+    this.sail.x += this.sail.speed * dt
+    if (this.sail.x < -200 || this.sail.x > this.world.w * TILE + 200) {
+      this.sail = null
+      this.sailIn = 120 + this.r() * 180
+    }
+  }
+
+  private tollBell(): void {
+    const bell = this.world.places.bell
+    const f = tileFeet(bell)
+    if (this.musicOn) playBell()
+    this.speech.floater(f.x, f.y - 50, 'GOOONNNNG\u2026', '#e0b13c')
+    if (!this.onScreen(f.x, f.y, 200)) this.speech.floater(this.player.x, this.player.y - 28, '(far off, the temple bell: GONNNG\u2026)', '#e0b13c')
   }
 
   private start(): void {
@@ -325,7 +450,7 @@ export class Game {
       }
     }
     const t = tileOf(f.x, f.y)
-    const prop = this.world.props.find((p) => p.text && p.y === t.y && (propColumns(p).includes(t.x) || (t.x >= p.x && t.x < p.x + (p.w ?? 1))))
+    const prop = this.world.props.find((p) => p.text && propTiles(p).some((q) => q.x === t.x && q.y === t.y))
     if (prop?.text) {
       this.dialog = new Dialog({ name: prop.name ?? prop.kind, pages: Array.isArray(prop.text) ? prop.text : [prop.text] })
       return
@@ -344,7 +469,7 @@ export class Game {
       const dy = k.ty - k.y
       const d = Math.hypot(dx, dy)
       if (d < 2) {
-        const pond = this.world.areas.pond
+        const pond = this.world.areas.templePond
         for (let i = 0; i < 10; i++) {
           const x = (pond.x + this.r() * pond.w) * TILE
           const y = (pond.y + this.r() * pond.h) * TILE
@@ -378,6 +503,7 @@ export class Game {
     const m = this.clock.minutes
     const meal = (m > 300 && m < 480) || (m > 660 && m < 780) || (m > 1020 && m < 1200)
     for (const s of this.statics) {
+      if (s.smoke && this.onScreen(s.smoke.x, s.smoke.y, 60)) this.fx.smoke(s.smoke.x, s.smoke.y, true)
       const bb = s.building
       if (!bb?.art.chimney) continue
       const wx = s.x + bb.art.chimney.x
@@ -441,22 +567,53 @@ export class Game {
       items.push({ sortY: f.y, draw: () => this.drawSprite(ctx, stallSprite(), f.x - 8, f.y, camX, camY, false) })
     }
     items.push({ sortY: p.y, draw: () => this.drawPlayer(ctx, camX, camY) })
+    const sail = this.sail
+    if (sail && sail.x > camX - 200 && sail.x < camX + s.w + 200 && sail.y < vy1 + 140) {
+      const art = propArt({ kind: 'ship', x: 0, y: 0, solid: false }, 0)
+      if (art) {
+        const img = art.sprite.img
+        items.push({
+          sortY: sail.y,
+          draw: () => {
+            const x = Math.round(sail.x - camX - img.width / 2)
+            const y = Math.round(sail.y - camY - art.sprite.ay)
+            if (sail.speed < 0) {
+              ctx.save()
+              ctx.translate(x + img.width, y)
+              ctx.scale(-1, 1)
+              ctx.drawImage(img, 0, 0)
+              ctx.restore()
+            } else ctx.drawImage(img, x, y)
+          },
+        })
+      }
+    }
     items.sort((a, b) => a.sortY - b.sortY)
     for (const it of items) it.draw()
 
     // Birds in flight, with their shadows on the ground.
     for (const a of this.animals) {
       if (!a.visible || a.z <= 0.5) continue
-      ctx.globalAlpha = 0.25
-      ellipse(ctx, a.x - camX, a.y - camY, 4, 1.5, '#10140c')
-      ctx.globalAlpha = 1
+      if (a.state !== 'idle') {
+        ctx.globalAlpha = 0.25
+        ellipse(ctx, a.x - camX, a.y - camY, 4, 1.5, '#10140c')
+        ctx.globalAlpha = 1
+      }
       this.drawSprite(ctx, a.sprite(), a.x, a.y - a.z, camX, camY, false)
     }
-    const minutes = this.clock.minutes
-    const dark = darknessAt(minutes)
-    this.fx.drawAir(ctx, camX, camY, dark < 0.3)
-
-    if (dark > 0.01) this.drawNight(ctx, camX, camY, dark)
+    const W = this.weather
+    const ambient = this.ambient()
+    const dark = darknessOf(ambient)
+    this.fx.drawAir(ctx, camX, camY, dark < 0.3 && W.rain < 0.2)
+    W.drawFog(ctx, camX, camY, s.w, s.h, this.time)
+    W.drawRain(ctx, s.w, s.h, this.frameDt)
+    this.drawLight(ctx, camX, camY, ambient, dark)
+    if (W.flash > 0.02) {
+      ctx.globalAlpha = Math.min(0.7, W.flash * 0.7)
+      ctx.fillStyle = '#e8eef8'
+      ctx.fillRect(0, 0, s.w, s.h)
+      ctx.globalAlpha = 1
+    }
     if (this.debug) this.drawDebug(ctx, camX, camY)
 
     s.present()
@@ -466,6 +623,7 @@ export class Game {
     this.hits = []
     if (!this.title) {
       drawHud(s, this.clock, this.musicOn, this.hits)
+      drawBanner(s, this.district, this.bannerT)
       const hintAlpha = this.hintT < 30 ? 1 : Math.max(0, 1 - (this.hintT - 30) / 3)
       if (!this.dialog) drawHint(s, HINT, hintAlpha)
     }
@@ -510,6 +668,18 @@ export class Game {
       ctx.globalAlpha = 1
     }
     ctx.drawImage(sp.img, x, y)
+    if (this.weather.rain > 0.35 && this.wantsUmbrella(v)) {
+      const um = umbrella(Math.floor(hash(v.spec.id.length, v.spec.id.charCodeAt(0), 3) * UMBRELLA_COLORS.length))
+      ctx.drawImage(um, Math.round(v.x - camX - um.width / 2), y - um.height + 7)
+    }
+  }
+
+  private wantsUmbrella(v: Villager): boolean {
+    if (v.isMoving) return true
+    const d = v.entry?.doing
+    if (!d) return false
+    const pose = d.kind === 'spot' || d.kind === 'area' ? d.pose : d.kind === 'patrol' ? d.stop ?? 'stand' : 'stand'
+    return pose === 'stand' || pose === 'shop' || pose === 'call' || pose === 'guard'
   }
 
   private drawPlayer(ctx: Ctx, camX: number, camY: number): void {
@@ -541,6 +711,12 @@ export class Game {
 
   private drawWater(ctx: Ctx, camX: number, camY: number): void {
     const t = this.time
+    const rain = this.weather.rain
+    if (rain > 0.05)
+      for (const p of this.ground.puddles) {
+        if (!this.onScreen(p.x, p.y, 20)) continue
+        this.rainRings(ctx, p.x - p.w + 1 - camX, p.y - 2 - camY, p.w * 2 - 2, 4, p.x * 7 + p.y, rain * 0.7)
+      }
     const tx0 = Math.max(0, Math.floor(camX / TILE))
     const ty0 = Math.max(0, Math.floor(camY / TILE))
     const tx1 = Math.min(this.world.w - 1, Math.ceil((camX + this.screen.w) / TILE))
@@ -548,7 +724,18 @@ export class Game {
     for (let ty = ty0; ty <= ty1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
         const tile = this.world.tiles[idx(tx, ty)]
-        if (tile !== T.Water && tile !== T.Paddy) continue
+        if (tile === T.Sand) {
+          // Waves lapping the beach.
+          if (ty + 1 < this.world.h && this.world.tiles[idx(tx, ty + 1)] === T.Sea) {
+            const wave = Math.sin(t * 1.3 + tx * 0.4)
+            const y = ty * TILE - camY + 12 + Math.round(wave * 2.5)
+            ctx.globalAlpha = 0.55 + wave * 0.25
+            px(ctx, tx * TILE - camX, y, TILE, 1, '#f2f8f8')
+            px(ctx, tx * TILE - camX + ((tx * 5) % 7), y + 1, 6, 1, '#d4ecf2')
+          }
+          continue
+        }
+        if (tile !== T.Water && tile !== T.Paddy && tile !== T.Sea && tile !== T.Moat) continue
         const northWater = ty > 0 && this.world.tiles[idx(tx, ty - 1)] === tile
         const ox = tx * TILE - camX
         const oy = ty * TILE - camY
@@ -561,8 +748,9 @@ export class Game {
           ctx.globalAlpha = (on - 0.75) * 3
           px(ctx, ox + sx, oy + sy, 2, 1, tile === T.Paddy ? '#c8e4dc' : '#cfe8f0')
         }
+        if (rain > 0.05) this.rainRings(ctx, ox, oy, TILE, TILE, tx * 131 + ty, rain)
         // The river flows south.
-        if (tile === T.Water && tx >= 50 && northWater) {
+        if (tile === T.Water && tx > 115 && northWater) {
           const h = hash(tx, ty, 70)
           const fy = (t * 9 + h * 16) % 16
           ctx.globalAlpha = 0.45
@@ -572,9 +760,32 @@ export class Game {
     ctx.globalAlpha = 1
   }
 
+  /** Rings spreading where raindrops hit water, inside a w×h box at (x, y) (screen px). */
+  private rainRings(ctx: Ctx, x: number, y: number, w: number, h: number, seed: number, rain: number): void {
+    const n = Math.max(1, Math.round((w * h) / 90))
+    for (let i = 0; i < n; i++) {
+      const ph = this.time * 1.6 + hash(seed, i, 91) * 7
+      const cyc = Math.floor(ph)
+      if (hash(seed, cyc, i + 92) > rain) continue
+      const k = ph - cyc
+      const cx = Math.round(x + 1 + hash(seed + cyc, i, 93) * (w - 2))
+      const cy = Math.round(y + 1 + hash(seed + cyc, i, 94) * (h - 2))
+      ctx.globalAlpha = (1 - k) * 0.6
+      if (k < 0.25) px(ctx, cx, cy, 1, 1, '#c8d6dc')
+      else {
+        const r = Math.round(1 + k * 2.5)
+        px(ctx, cx - r, cy, 1, 1, '#a8bcc4')
+        px(ctx, cx + r, cy, 1, 1, '#a8bcc4')
+        px(ctx, cx - r + 1, cy - 1, r * 2 - 1, 1, '#a8bcc4')
+        px(ctx, cx - r + 1, cy + 1, r * 2 - 1, 1, '#a8bcc4')
+      }
+    }
+    ctx.globalAlpha = 1
+  }
+
   private drawKoi(ctx: Ctx, camX: number, camY: number): void {
-    const dark = darknessAt(this.clock.minutes)
-    ctx.globalAlpha = 0.85 - dark * 0.6
+    const dark = darknessOf(this.ambient())
+    ctx.globalAlpha = Math.max(0.2, 0.85 - dark * 0.6)
     for (const k of this.koi) {
       if (!this.onScreen(k.x, k.y)) continue
       const right = k.tx > k.x
@@ -587,20 +798,28 @@ export class Game {
     ctx.globalAlpha = 1
   }
 
-  private drawNight(ctx: Ctx, camX: number, camY: number, dark: number): void {
+  /** The light of the hour, dimmed by cloud and rain. */
+  private ambient(): [number, number, number] {
+    const a = ambientAt(this.clock.minutes)
+    const t = this.weather.ambientTint()
+    // Clouds steal less light when there's little left to steal.
+    const k = Math.max(0.35, 1 - darknessOf(a))
+    return [a[0] * (1 - (1 - t[0]) * k), a[1] * (1 - (1 - t[1]) * k), a[2] * (1 - (1 - t[2]) * k)]
+  }
+
+  private drawLight(ctx: Ctx, camX: number, camY: number, ambient: [number, number, number], dark: number): void {
     const s = this.screen
     const L = this.lighting
-    L.begin(s.w, s.h, ambientAt(this.clock.minutes))
+    L.begin(s.w, s.h, ambient)
     const lampsOn = dark > 0.22
     const flick = (seed: number) => 0.85 + Math.sin(this.time * 9 + seed) * 0.08 + Math.sin(this.time * 23 + seed * 3) * 0.05
-    const heisukeOnWatch = this.villagers.some((v) => v.id === 'heisuke' && !v.inside && v.entry?.label.startsWith('night'))
     const litWindows: { x: number; y: number; w: number; h: number }[] = []
     const flames: { x: number; y: number; big: boolean }[] = []
     for (const st of this.statics) {
       if (st.x > camX + s.w + 60 || st.x + st.img.width < camX - 60 || st.y > camY + s.h + 60 || st.y + st.img.height < camY - 60) continue
-      if (st.glow && lampsOn) {
-        const brazier = st.prop?.kind === 'brazier'
-        if (brazier && !heisukeOnWatch) continue
+      const always = st.prop?.kind === 'campfire'
+      if (st.glow && (lampsOn || always)) {
+        const brazier = st.prop?.kind === 'brazier' || st.prop?.kind === 'lighthouse' || always
         L.add(st.glow.x - camX, st.glow.y - camY, st.glow.r, st.glow.color, flick(st.x) * Math.min(1, dark * 2))
         flames.push({ x: st.glow.x, y: st.glow.y, big: brazier })
       }
@@ -613,19 +832,18 @@ export class Game {
           L.add(wx + w.w / 2 - camX, wy + w.h + 4 - camY, Math.max(18, w.w * 0.9), '#ffb860', 0.75 * Math.min(1, dark * 2))
         }
       }
-      if (bb && lampsOn) {
-        const open = bb.b.id === 'teahouse' ? this.clock.between(17 * 60, 23 * 60) : this.clock.between(18 * 60, 22 * 60)
-        if (open)
-          for (const l of bb.art.lamps) {
-            L.add(st.x + l.x - camX, st.y + l.y - camY, l.r, l.color, flick(l.x) * Math.min(1, dark * 2))
-            flames.push({ x: st.x + l.x, y: st.y + l.y, big: false })
-          }
-      }
+      if (bb && lampsOn)
+        for (const l of bb.art.lamps) {
+          const [from, to] = l.hours ?? [18 * 60, 22 * 60]
+          if (!this.clock.between(from, to)) continue
+          L.add(st.x + l.x - camX, st.y + l.y - camY, l.r, l.color, flick(l.x) * Math.min(1, dark * 2))
+          flames.push({ x: st.x + l.x, y: st.y + l.y, big: false })
+        }
     }
-    const fireflies = dark > 0.42 ? this.fx.fireflyLights() : []
+    const fireflies = dark > 0.42 && this.weather.rain < 0.15 ? this.fx.fireflyLights() : []
     for (const f of fireflies) if (f.on > 0.2 && this.onScreen(f.x, f.y)) L.add(f.x - camX, f.y - camY, 9, '#a8e070', f.on * 0.9)
     // A faint halo so the turtle can see its own feet.
-    L.add(this.player.x - camX, this.player.y - 6 - camY, 40, '#3a3a58', dark)
+    L.add(this.player.x - camX, this.player.y - 6 - camY, 52, '#4a4a66', dark)
     L.apply(ctx)
 
     // Emissive bits on top of the darkness.
@@ -663,6 +881,10 @@ export class Game {
   private mapMarkers(): MapMarker[] {
     const out: MapMarker[] = []
     for (const v of this.villagers) {
+      if (v.spec.extra) {
+        if (!v.inside) out.push({ x: v.x, y: v.y, color: '#a89c84' })
+        continue
+      }
       const away = v.spec.home === 'westEdge' && v.inside
       out.push({
         x: v.x,

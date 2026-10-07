@@ -11,12 +11,21 @@
       rel="stylesheet"
     />
     <style>
-      html, body { margin: 0; height: 100%; background: #1a1220; overflow: hidden; }
-      canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+      html, body { margin: 0; height: 100%; background: #0e0c10; overflow: hidden; }
+      canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; touch-action: none; }
+      /* The world gets a muted, earthy colour grade; the UI on top does not. */
+      #game { transition: filter 2s linear; }
+      #vignette {
+        position: fixed; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 45%, rgba(6, 5, 8, 0.72) 100%);
+      }
+      #ui { pointer-events: none; }
     </style>
   </head>
   <body>
     <canvas id="game"></canvas>
+    <div id="vignette"></div>
+    <canvas id="ui"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

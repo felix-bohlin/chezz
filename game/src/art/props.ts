@@ -11,6 +11,8 @@ export interface PropArt {
   sprite: Sprite
   /** Light source relative to the anchor, lit at night (lanterns, brazier). */
   glow?: { x: number; y: number; r: number; color: string; flame?: boolean }
+  /** Smoke/steam source relative to the anchor (incense burner). */
+  smoke?: { x: number; y: number }
 }
 
 const INK = '#1a1220'
@@ -23,8 +25,8 @@ export function propArt(p: Prop, seed: number, fenceMask = 0): PropArt | null {
   const key =
     p.kind === 'tree'
       ? `tree:${p.variant}:${seed % 3}`
-      : p.kind === 'fence'
-        ? `fence:${fenceMask}`
+      : p.kind === 'fence' || p.kind === 'wall'
+        ? `${p.kind}:${fenceMask}`
         : ['bamboo', 'bush', 'hydrangea', 'iris', 'reeds', 'rock'].includes(p.kind)
           ? `${p.kind}:${seed % 4}`
           : `${p.kind}:${p.variant ?? ''}`
@@ -56,7 +58,7 @@ function make(p: Prop, seed: number, fenceMask: number): PropArt | null {
     case 'well':
       return well()
     case 'board':
-      return board()
+      return board(p.variant === 'contracts')
     case 'jizo':
       return jizo()
     case 'sign':
@@ -87,6 +89,38 @@ function make(p: Prop, seed: number, fenceMask: number): PropArt | null {
       return trough()
     case 'torii':
       return torii()
+    case 'wall':
+      return wall(fenceMask)
+    case 'ship':
+      return ship()
+    case 'lighthouse':
+      return lighthouse()
+    case 'grave':
+      return grave(Number(p.variant ?? 0))
+    case 'incense':
+      return incense()
+    case 'stall':
+      return stall(p.variant ?? 'veg')
+    case 'bales':
+      return bales()
+    case 'crates':
+      return crates()
+    case 'anchor':
+      return anchor()
+    case 'redbridge':
+      return redbridge(p.w ?? 5)
+    case 'komainu':
+      return komainu(p.variant === 'fox', p.x % 2 === 0)
+    case 'table':
+      return table()
+    case 'cart':
+      return cart(p.variant === 'barrels')
+    case 'kago':
+      return kago()
+    case 'campfire':
+      return campfire()
+    case 'bedroll':
+      return bedroll(seed)
   }
 }
 
@@ -144,7 +178,7 @@ function well(): PropArt {
   return { sprite: { img, ax: 12, ay: 31 } }
 }
 
-function board(): PropArt {
+function board(contracts = false): PropArt {
   const img = build(
     34,
     30,
@@ -165,6 +199,21 @@ function board(): PropArt {
         for (let y = 12; y < 18; y += 2) px(ctx, x + 1, y, w - 2 - (y % 3), 1, '#3d3449')
       }
       dot(ctx, 15, 11, '#d23c2a')
+      if (contracts) {
+        // Wanted posters with red seals, a crude drawing of something with a plate on its head,
+        // and a knife pinning the newest one.
+        px(ctx, 13, 10, 7, 9, '#e0d0a8')
+        ellipse(ctx, 16, 14, 2, 2, '#4a6a3a')
+        px(ctx, 15, 11, 3, 1, '#a8b0a0')
+        dot(ctx, 9, 17, '#a02a1e')
+        dot(ctx, 27, 17, '#a02a1e')
+        dot(ctx, 18, 17, '#a02a1e')
+        px(ctx, 24, 9, 1, 5, '#c8ccd4')
+        px(ctx, 23, 8, 3, 1, '#3a2a1c')
+        px(ctx, 24, 6, 1, 2, '#3a2a1c')
+        // A torn corner flapping.
+        px(ctx, 4, 19, 3, 2, '#f1e6cc')
+      }
     },
     { outline: INK, shadow: { cx: 17, cy: 28, rx: 14, ry: 2 } },
   )
@@ -543,4 +592,470 @@ export function stallSprite(): Sprite {
   const sprite = { img, ax: 18, ay: 13 }
   cache.set(key, { sprite })
   return sprite
+}
+
+// ---------- the town and the harbour ----------
+
+const RF = ['#2c323e', '#3c4453', '#4f5a6c', '#67748c', '#8792aa']
+
+/** Town wall piece; mask bits: 1 = left, 2 = right, 4 = up, 8 = down neighbours are wall. */
+function wall(mask: number): PropArt {
+  const horiz = (mask & 3) !== 0 || (mask & 12) === 0
+  const bottomEnd = (mask & 8) === 0
+  const H = 48
+  const img = build(
+    18,
+    H,
+    (ctx) => {
+      const base = H - 2
+      if (horiz) {
+        const x0 = mask & 1 ? 0 : 1
+        const x1 = mask & 2 ? 18 : 17
+        const w = x1 - x0
+        // Stone base, plaster, black skirt, tile cap.
+        for (let j = 0; j < 16; j += 4)
+          for (let i = -((j / 4) % 2) * 3; i < w; i += 6) {
+            const sx = Math.max(x0, x0 + i)
+            const ex = Math.min(x1, x0 + i + 5)
+            if (ex > sx) {
+              px(ctx, sx, base - 16 + j, ex - sx, 3, (i + j) % 12 === 0 ? '#8d877c' : '#a29b8c')
+              px(ctx, sx, base - 16 + j, ex - sx, 1, '#b8b2a4')
+            }
+          }
+        px(ctx, x0, base - 16, w, 16, '#5e5850')
+        for (let j = 0; j < 16; j += 4)
+          for (let i = -((j / 4) % 2) * 3; i < w; i += 6) {
+            const sx = Math.max(x0, x0 + i)
+            const ex = Math.min(x1, x0 + i + 5)
+            if (ex > sx) {
+              px(ctx, sx, base - 16 + j, ex - sx, 3, (i * 7 + j) % 3 === 0 ? '#8d877c' : '#a29b8c')
+              px(ctx, sx, base - 16 + j, ex - sx, 1, '#b8b2a4')
+            }
+          }
+        px(ctx, x0, base - 30, w, 14, '#f2eee4')
+        px(ctx, x0, base - 19, w, 3, '#2a2420')
+        px(ctx, x0, base - 36, w, 6, RF[2])
+        for (let i = x0; i < x1; i += 3) px(ctx, i, base - 36, 1, 6, RF[1])
+        px(ctx, x0, base - 37, w, 2, RF[0])
+        px(ctx, x0, base - 31, w, 1, RF[4])
+      } else {
+        // Seen end-on from above: the roof strip, raised to the wall's height.
+        px(ctx, 3, 0, 12, 18, RF[2])
+        for (let y = 0; y < 18; y += 3) px(ctx, 3, y, 12, 1, RF[1])
+        px(ctx, 8, 0, 2, 18, RF[0])
+        px(ctx, 3, 0, 1, 18, RF[4])
+        if (bottomEnd) {
+          px(ctx, 3, 18, 12, 12, '#f2eee4')
+          px(ctx, 3, 27, 12, 3, '#2a2420')
+          px(ctx, 3, 30, 12, 16, '#9c9587')
+          for (let j = 30; j < 46; j += 4) px(ctx, 3, j, 12, 1, '#6e685e')
+        }
+      }
+    },
+    { outline: '#1a1220' },
+  )
+  return { sprite: { img, ax: 9, ay: H - 3 } }
+}
+
+function ship(): PropArt {
+  const W = 172
+  const H = 140
+  const img = build(
+    W,
+    H,
+    (ctx) => {
+      const deck = H - 30
+      // Hull: long and low, bow rising on the left, stern castle on the right.
+      for (let x = 6; x < W - 6; x++) {
+        const t = (x - 6) / (W - 12)
+        const rise = t < 0.15 ? Math.round((0.15 - t) * 70) : t > 0.82 ? Math.round((t - 0.82) * 50) : 0
+        const top = deck - rise
+        const bottom = H - 8 - (t < 0.1 ? Math.round((0.1 - t) * 60) : 0)
+        px(ctx, x, top, 1, bottom - top, '#6a4426')
+        px(ctx, x, top, 1, 2, '#8f6038')
+        for (let y = top + 5; y < bottom; y += 5) dot(ctx, x, y, '#4a2c17')
+        px(ctx, x, bottom - 3, 1, 3, '#2a1a10')
+      }
+      // A painted eye on the bow.
+      ellipse(ctx, 26, deck + 2, 4, 3, '#f4f1ea')
+      ellipse(ctx, 26, deck + 2, 2, 2, '#1a1220')
+      // Stern cabin with a little roof.
+      px(ctx, W - 44, deck - 18, 32, 16, '#8f6038')
+      px(ctx, W - 40, deck - 14, 8, 6, '#f2ead4')
+      px(ctx, W - 28, deck - 14, 8, 6, '#f2ead4')
+      px(ctx, W - 48, deck - 22, 40, 4, '#3c4453')
+      // Mast and a huge square sail with a crest.
+      px(ctx, 84, 8, 4, deck - 8, '#5a3a22')
+      px(ctx, 50, 12, 72, 3, '#5a3a22')
+      for (let x = 52; x < 120; x++) {
+        const belly = Math.round(Math.sin(((x - 52) / 68) * Math.PI) * 4)
+        px(ctx, x, 15 + belly, 1, deck - 28 - belly, (x - 52) % 9 === 0 ? '#d8ccb0' : '#efe6cc')
+      }
+      ellipse(ctx, 86, 45, 10, 10, '#c0262f')
+      ellipse(ctx, 86, 45, 6, 6, '#efe6cc')
+      px(ctx, 80, 44, 13, 2, '#c0262f')
+      // Rigging and a pennant.
+      for (let i = 0; i < 40; i++) {
+        dot(ctx, 86 - i, 10 + Math.round(i * 2.4), '#3a2a1a')
+        dot(ctx, 88 + i, 10 + Math.round(i * 2.4), '#3a2a1a')
+      }
+      px(ctx, 88, 4, 12, 3, '#2f3f73')
+    },
+    { outline: '#1a1220', shadow: { cx: W / 2, cy: H - 6, rx: W / 2 - 4, ry: 4, alpha: 0.35 } },
+  )
+  return { sprite: { img, ax: W / 2, ay: H - 12 } }
+}
+
+function lighthouse(): PropArt {
+  const img = build(
+    28,
+    72,
+    (ctx) => {
+      px(ctx, 2, 60, 24, 10, STONE.m)
+      px(ctx, 2, 60, 24, 2, STONE.l)
+      for (let y = 22; y < 60; y++) {
+        const inset = Math.round((60 - y) * 0.12)
+        px(ctx, 6 + inset, y, 16 - inset * 2, 1, (y >> 2) % 2 ? STONE.m : STONE.l)
+      }
+      px(ctx, 7, 12, 14, 10, '#3d2615')
+      px(ctx, 9, 14, 10, 7, '#f2d8a0')
+      for (let x = 10; x < 19; x += 3) px(ctx, x, 14, 1, 7, '#3d2615')
+      px(ctx, 4, 8, 20, 4, '#3c4453')
+      px(ctx, 8, 5, 12, 3, '#4f5a6c')
+      px(ctx, 13, 1, 2, 4, STONE.d)
+    },
+    { outline: INK, shadow: { cx: 14, cy: 69, rx: 12, ry: 2 } },
+  )
+  return { sprite: { img, ax: 14, ay: 69 }, glow: { x: 0, y: -51, r: 96, color: '#fff0c0', flame: true } }
+}
+
+function grave(v: number): PropArt {
+  const img = build(
+    16,
+    26,
+    (ctx) => {
+      px(ctx, 2, 20, 12, 4, STONE.m)
+      px(ctx, 2, 20, 12, 1, STONE.l)
+      if (v === 1) {
+        ellipse(ctx, 8, 14, 4, 6, STONE.l)
+        px(ctx, 6, 9, 4, 1, STONE.h)
+      } else {
+        px(ctx, 5, v === 2 ? 10 : 5, 6, v === 2 ? 10 : 15, STONE.l)
+        px(ctx, 5, v === 2 ? 10 : 5, 6, 1, STONE.h)
+        px(ctx, 10, v === 2 ? 10 : 5, 1, v === 2 ? 10 : 15, STONE.m)
+      }
+      for (let y = v === 2 ? 12 : 7; y < 18; y += 2) px(ctx, 7, y, 2, 1, STONE.d)
+      // Wooden memorial tablets behind, fresh flowers in front.
+      if (v !== 1) for (const x of [12, 14]) px(ctx, x, 2 + (x - 12) * 2, 1, 18, '#c9a070')
+      px(ctx, 3, 18, 2, 2, '#e8604a')
+      px(ctx, 11, 18, 2, 2, '#f2d04a')
+    },
+    { outline: '#3a3632', shadow: { cx: 8, cy: 23, rx: 7, ry: 1.5 } },
+  )
+  return { sprite: { img, ax: 8, ay: 23 } }
+}
+
+function incense(): PropArt {
+  const img = build(
+    34,
+    34,
+    (ctx) => {
+      px(ctx, 6, 26, 3, 6, '#4a3a2a')
+      px(ctx, 25, 26, 3, 6, '#4a3a2a')
+      ellipse(ctx, 17, 22, 13, 6, '#6a5a3a')
+      ellipse(ctx, 17, 20, 12, 3, '#8a7a4a')
+      ellipse(ctx, 17, 20, 9, 2, '#2a2420')
+      // Little roof on posts.
+      px(ctx, 8, 8, 2, 12, '#4a3a2a')
+      px(ctx, 24, 8, 2, 12, '#4a3a2a')
+      px(ctx, 4, 5, 26, 4, '#4a5a4a')
+      px(ctx, 8, 2, 18, 3, '#5a6a5a')
+      dot(ctx, 17, 1, '#c9a040')
+    },
+    { outline: INK, shadow: { cx: 17, cy: 31, rx: 14, ry: 2 } },
+  )
+  return { sprite: { img, ax: 16, ay: 31 }, smoke: { x: 1, y: -12 } }
+}
+
+function stall(v: string): PropArt {
+  const goods: Record<string, (ctx: Ctx) => void> = {
+    fish: (ctx) => {
+      for (let x = 5; x < 29; x += 6) {
+        px(ctx, x, 18, 5, 2, x % 12 ? '#a9b4bc' : '#c0626a')
+        dot(ctx, x + 5, 17, '#a9b4bc')
+        dot(ctx, x + 1, 18, INK)
+      }
+    },
+    veg: (ctx) => {
+      for (let x = 5; x < 29; x += 5) {
+        px(ctx, x, 17, 3, 3, x % 10 ? '#68a548' : '#f4f1ea')
+        dot(ctx, x + 1, 16, '#4f8a3a')
+      }
+      px(ctx, 24, 17, 3, 3, '#5a2f6a')
+    },
+    fans: (ctx) => {
+      const c = ['#d23c2a', '#2f3f73', '#e0b13c', '#f4f1ea']
+      for (let i = 0; i < 4; i++) {
+        ellipse(ctx, 8 + i * 6, 17, 3, 2, c[i])
+        px(ctx, 8 + i * 6, 17, 1, 3, WOOD.m)
+      }
+    },
+    pots: (ctx) => {
+      for (let x = 6; x < 29; x += 6) {
+        ellipse(ctx, x + 1, 17, 2.5, 2.5, x % 12 ? '#8a5a3a' : '#5a7a6a')
+        px(ctx, x, 14, 3, 1, '#4a2c17')
+      }
+    },
+  }
+  const stripe = v === 'fish' ? '#2f3f73' : v === 'fans' ? '#c0262f' : v === 'pots' ? '#5a7a6a' : '#5a8a4a'
+  const img = build(
+    34,
+    32,
+    (ctx) => {
+      px(ctx, 3, 4, 1, 24, WOOD.d)
+      px(ctx, 30, 4, 1, 24, WOOD.d)
+      for (let x = 1; x < 33; x++) px(ctx, x, 3, 1, 6, Math.floor(x / 4) % 2 ? stripe : '#f1e6cc')
+      for (let x = 1; x < 33; x += 4) px(ctx, x, 9, 2, 1, stripe)
+      px(ctx, 2, 20, 30, 3, WOOD.l)
+      px(ctx, 2, 23, 30, 5, WOOD.m)
+      px(ctx, 4, 28, 2, 2, WOOD.d)
+      px(ctx, 28, 28, 2, 2, WOOD.d)
+      goods[v]?.(ctx)
+    },
+    { outline: INK, shadow: { cx: 17, cy: 29, rx: 15, ry: 2 } },
+  )
+  return { sprite: { img, ax: 16, ay: 29 } }
+}
+
+function bales(): PropArt {
+  const img = build(
+    34,
+    26,
+    (ctx) => {
+      const bale = (x: number, y: number) => {
+        px(ctx, x, y, 10, 8, '#c9a752')
+        px(ctx, x, y, 10, 1, '#dcbe6a')
+        px(ctx, x + 2, y, 1, 8, '#9c7e36')
+        px(ctx, x + 7, y, 1, 8, '#9c7e36')
+        ellipse(ctx, x + 1, y + 4, 1.5, 3.5, '#b49040')
+      }
+      bale(2, 16)
+      bale(12, 16)
+      bale(22, 16)
+      bale(7, 8)
+      bale(17, 8)
+    },
+    { outline: '#4a3618', shadow: { cx: 17, cy: 24, rx: 16, ry: 2 } },
+  )
+  return { sprite: { img, ax: 16, ay: 23 } }
+}
+
+function crates(): PropArt {
+  const img = build(
+    18,
+    22,
+    (ctx) => {
+      const crate = (x: number, y: number, s: number) => {
+        px(ctx, x, y, s, s, '#a87a46')
+        px(ctx, x, y, s, 1, '#c49a62')
+        for (let i = x + 3; i < x + s; i += 3) px(ctx, i, y + 1, 1, s - 1, '#7a5232')
+        px(ctx, x, y + Math.floor(s / 2), s, 1, '#7a5232')
+      }
+      crate(1, 10, 10)
+      crate(9, 12, 8)
+      crate(4, 3, 8)
+    },
+    { outline: '#3d2615', shadow: { cx: 9, cy: 20, rx: 8, ry: 1.5 } },
+  )
+  return { sprite: { img, ax: 9, ay: 20 } }
+}
+
+function anchor(): PropArt {
+  const img = build(
+    18,
+    14,
+    (ctx) => {
+      px(ctx, 3, 6, 12, 2, '#3a3a40')
+      for (const [x, y] of [
+        [2, 4],
+        [1, 3],
+        [15, 4],
+        [16, 3],
+        [8, 3],
+        [8, 9],
+      ])
+        px(ctx, x, y, 2, 2, '#3a3a40')
+      ellipse(ctx, 14, 10, 2, 2, '#5a4a3a')
+      px(ctx, 14, 8, 1, 4, '#c9b58a')
+    },
+    { outline: INK, shadow: { cx: 9, cy: 11, rx: 8, ry: 1.5 } },
+  )
+  return { sprite: { img, ax: 9, ay: 11 } }
+}
+
+function redbridge(w: number): PropArt {
+  const W = w * 16 + 6
+  const img = build(
+    W,
+    30,
+    (ctx) => {
+      const red = '#d23c2a'
+      for (let x = 2; x < W - 2; x++) {
+        const t = (x - 2) / (W - 4)
+        const lift = Math.round(Math.sin(t * Math.PI) * 8)
+        px(ctx, x, 18 - lift, 1, 5, '#8f6038')
+        dot(ctx, x, 18 - lift, '#b07e4c')
+        px(ctx, x, 11 - lift, 1, 2, red)
+        dot(ctx, x, 11 - lift, '#e8604a')
+        if ((x - 2) % 10 === 0) {
+          px(ctx, x, 11 - lift, 2, 8, red)
+          dot(ctx, x, 9 - lift, '#e0b13c')
+        }
+      }
+    },
+    { outline: INK },
+  )
+  return { sprite: { img, ax: W / 2, ay: 26 } }
+}
+
+function komainu(fox: boolean, flip: boolean): PropArt {
+  const img = build(
+    16,
+    22,
+    (ctx) => {
+      px(ctx, 2, 16, 12, 5, STONE.m)
+      px(ctx, 2, 16, 12, 1, STONE.l)
+      const body = fox ? '#e8e4dc' : STONE.l
+      px(ctx, 5, 8, 6, 8, body)
+      ellipse(ctx, flip ? 9 : 7, 6, 3, 3, body)
+      if (fox) {
+        px(ctx, flip ? 7 : 5, 2, 1, 3, body)
+        px(ctx, flip ? 10 : 8, 2, 1, 3, body)
+        px(ctx, 5, 10, 6, 2, '#d23c2a')
+        px(ctx, flip ? 3 : 11, 9, 2, 6, body)
+      } else {
+        px(ctx, 4, 3, 8, 3, STONE.m)
+        for (let x = 4; x < 12; x += 2) dot(ctx, x, 3, STONE.d)
+      }
+      dot(ctx, flip ? 9 : 6, 6, INK)
+    },
+    { outline: '#3a3632', shadow: { cx: 8, cy: 20, rx: 6, ry: 1.5 } },
+  )
+  return { sprite: { img, ax: 8, ay: 20 } }
+}
+
+function table(): PropArt {
+  const img = build(
+    20,
+    20,
+    (ctx) => {
+      px(ctx, 2, 10, 16, 3, '#4a3a6a')
+      px(ctx, 2, 13, 16, 2, '#36284e')
+      px(ctx, 3, 15, 2, 4, WOOD.d)
+      px(ctx, 15, 15, 2, 4, WOOD.d)
+      px(ctx, 6, 5, 4, 5, '#8a6038')
+      for (let x = 7; x < 10; x++) px(ctx, x, 2, 1, 4, '#d8c9a0')
+      px(ctx, 12, 6, 4, 4, '#f1e6cc')
+      dot(ctx, 13, 7, '#d23c2a')
+    },
+    { outline: INK, shadow: { cx: 10, cy: 18, rx: 8, ry: 1.5 } },
+  )
+  return { sprite: { img, ax: 10, ay: 18 } }
+}
+
+function cart(barrels: boolean): PropArt {
+  const img = build(
+    34,
+    26,
+    (ctx) => {
+      px(ctx, 2, 14, 26, 4, WOOD.l)
+      px(ctx, 2, 14, 26, 1, WOOD.h)
+      px(ctx, 26, 15, 8, 2, WOOD.m) // handles
+      if (barrels)
+        for (const x of [4, 12, 20]) {
+          px(ctx, x, 6, 7, 8, '#d9c27a')
+          px(ctx, x, 8, 7, 1, '#7a5a2a')
+          px(ctx, x + 2, 9, 3, 3, '#f4f1ea')
+        }
+      else
+        for (let i = 0; i < 6; i++) {
+          px(ctx, 4 + i * 4, 9 + (i % 2), 3, 5, '#f4f1ea')
+          px(ctx, 4 + i * 4, 7 + (i % 2), 3, 2, '#68a548')
+        }
+      ellipse(ctx, 9, 20, 5, 5, WOOD.d)
+      ellipse(ctx, 9, 20, 3, 3, WOOD.m)
+      dot(ctx, 9, 20, WOOD.d)
+    },
+    { outline: INK, shadow: { cx: 16, cy: 24, rx: 15, ry: 2 } },
+  )
+  return { sprite: { img, ax: 16, ay: 24 } }
+}
+
+function kago(): PropArt {
+  const img = build(
+    36,
+    30,
+    (ctx) => {
+      px(ctx, 0, 6, 36, 2, '#3d2615') // carrying pole
+      px(ctx, 8, 8, 20, 16, '#2a2233') // lacquered box
+      px(ctx, 10, 11, 16, 9, '#c9a040')
+      for (let x = 11; x < 26; x += 3) px(ctx, x, 11, 1, 9, '#7a5a1a')
+      px(ctx, 6, 3, 24, 4, '#2a2233') // roof
+      px(ctx, 8, 2, 20, 1, '#4a4058')
+      px(ctx, 9, 24, 2, 4, '#3d2615')
+      px(ctx, 25, 24, 2, 4, '#3d2615')
+      dot(ctx, 18, 15, '#d23c2a')
+    },
+    { outline: INK, shadow: { cx: 18, cy: 27, rx: 14, ry: 2 } },
+  )
+  return { sprite: { img, ax: 16, ay: 27 } }
+}
+
+function campfire(): PropArt {
+  const img = build(
+    20,
+    14,
+    (ctx) => {
+      // Ring of stones, charred logs, a pot on a tripod of sticks.
+      for (const [x, y] of [
+        [2, 9],
+        [5, 11],
+        [9, 12],
+        [13, 11],
+        [16, 9],
+        [4, 7],
+        [15, 7],
+      ])
+        px(ctx, x, y, 3, 2, hash3(x, y) ? '#6e6a64' : '#5a5650')
+      px(ctx, 6, 8, 8, 2, '#2a1e16')
+      px(ctx, 8, 7, 4, 1, '#3a2a1c')
+      px(ctx, 7, 9, 6, 1, '#7a3a1a')
+      px(ctx, 4, 0, 1, 8, '#4a3422')
+      px(ctx, 15, 0, 1, 8, '#4a3422')
+      px(ctx, 4, 0, 12, 1, '#4a3422')
+      px(ctx, 7, 2, 6, 4, '#2a2626')
+      px(ctx, 7, 2, 6, 1, '#4a4644')
+    },
+    { outline: INK, shadow: { cx: 10, cy: 12, rx: 9, ry: 2 } },
+  )
+  return { sprite: { img, ax: 10, ay: 12 }, glow: { x: 0, y: -4, r: 60, color: '#ff9a40', flame: true }, smoke: { x: 0, y: -10 } }
+}
+
+const hash3 = (x: number, y: number) => ((x * 7 + y * 13) & 3) === 0
+
+function bedroll(seed: number): PropArt {
+  const cols = ['#6a5a7a', '#7a5a3a', '#5a6a5a']
+  const col = cols[seed % cols.length]
+  const img = build(
+    16,
+    8,
+    (ctx) => {
+      px(ctx, 1, 2, 14, 5, '#8a7c62')
+      px(ctx, 4, 1, 11, 5, col)
+      px(ctx, 4, 1, 11, 1, '#9a8a6a')
+      ellipse(ctx, 2.5, 3.5, 2, 1.6, '#c4b48a')
+    },
+    { outline: INK },
+  )
+  return { sprite: { img, ax: 8, ay: 7 } }
 }

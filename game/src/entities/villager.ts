@@ -6,16 +6,22 @@ import { personSprite, type DrawPose } from '../art/people'
 import type { Sprite } from '../art/sprite'
 import { pick, rng, type Rng } from '../engine/rng'
 import { toMin } from '../sim/clock'
-import type { Entry, VillagerSpec } from '../sim/cast'
+import type { Entry, VillagerSpec } from '../sim/types'
 import { areaTiles, findPath, tileFeet, tileOf } from '../world/grid'
 import { idx, T, type Dir, type Pt } from '../world/layout'
 import type { Game } from '../game'
 
+/** The latest entry whose time has passed; before the first one, yesterday's last. */
 export function currentEntry(spec: VillagerSpec, minutes: number, market: boolean): Entry {
   const list = spec.schedule.filter((e) => !e.days || market)
-  let cur = list[list.length - 1]
-  for (const e of list) if (toMin(e.at) <= minutes) cur = e
-  return cur
+  let cur: Entry | null = null
+  let latest: Entry = list[0]
+  for (const e of list) {
+    const m = toMin(e.at)
+    if (m <= minutes && (!cur || m >= toMin(cur.at))) cur = e
+    if (m >= toMin(latest.at)) latest = e
+  }
+  return cur ?? latest
 }
 
 export class Villager {
@@ -162,8 +168,8 @@ export class Villager {
           this.moving = this.move(speed)
           if (!this.moving) {
             this.phase = 'act'
-            this.actLeft = 4 + this.r() * 6
-            this.pose = 'stand'
+            this.actLeft = d.wait ?? 4 + this.r() * 6
+            this.pose = d.stop ?? 'stand'
             this.dir = place.face ?? (['down', 'left', 'right'] as const)[Math.floor(this.r() * 3)]
           }
         } else {
@@ -188,7 +194,7 @@ export class Villager {
     const d = e.doing
     if (d.kind === 'area') this.nextAreaTarget(g, d.area, d.style, d.pose)
     // Said once they're out of the door (see update).
-    this.pendingSay = e.say && (e.shout || this.distToPlayer(g) < 14 * 16) ? { text: e.say, shout: !!e.shout } : null
+    this.pendingSay = e.say && this.distToPlayer(g) < (e.shout ? 40 : 14) * 16 ? { text: e.say, shout: !!e.shout } : null
   }
 
   private emerge(g: Game): void {
@@ -341,12 +347,15 @@ export class Villager {
     let frame = 0
     if (this.moving) {
       const d = this.entry?.doing
-      const carry = d && d.kind === 'area' && (d.pose === 'carry' || d.pose === 'play') ? d.pose : d && d.kind === 'spot' && d.pose === 'serve' ? 'serve' : 'walk'
-      pose = carry
+      let walkPose: DrawPose = 'walk'
+      if (d?.kind === 'area' && (d.pose === 'carry' || d.pose === 'play')) walkPose = d.pose
+      else if (d?.kind === 'spot' && d.pose === 'serve') walkPose = 'serve'
+      else if (d?.kind === 'patrol' && d.pose) walkPose = d.pose
+      pose = walkPose
       frame = Math.floor(this.walkDist / 5) % 4
     } else {
       const t = g.time + this.spec.id.length * 0.37
-      if (['hoe', 'sweep', 'plant', 'feed', 'fish'].includes(pose)) frame = Math.floor(t * (pose === 'fish' ? 1.1 : 2.2)) % 2
+      if (['hoe', 'hammer', 'sweep', 'plant', 'feed', 'fish'].includes(pose)) frame = Math.floor(t * (pose === 'fish' ? 1.1 : 2.2)) % 2
       if (pose === 'play') {
         pose = 'play'
         frame = Math.floor(t * 4) % 4

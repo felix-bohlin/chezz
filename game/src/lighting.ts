@@ -6,17 +6,20 @@ import { canvas, hexRgb, type Ctx } from './engine/pixel'
 
 type RGB = [number, number, number]
 
-const NIGHT: RGB = [58, 66, 124]
+// Gritty palette: moonless nights you can barely see in, a grey-warm overcast day, short bruised
+// dawns and dusks. Lanterns matter.
+const NIGHT: RGB = [46, 52, 96]
+const DAY: RGB = [232, 226, 212]
 const KEYS: [number, RGB][] = [
   [0, NIGHT],
   [270, NIGHT],
-  [330, [140, 118, 162]],
-  [375, [255, 192, 168]],
-  [450, [255, 255, 255]],
-  [1020, [255, 255, 255]],
-  [1095, [255, 204, 160]],
-  [1140, [206, 136, 150]],
-  [1200, [96, 96, 160]],
+  [330, [92, 86, 116]],
+  [380, [196, 160, 140]],
+  [450, DAY],
+  [1020, DAY],
+  [1095, [224, 176, 132]],
+  [1140, [168, 108, 104]],
+  [1200, [70, 70, 112]],
   [1290, NIGHT],
   [1440, NIGHT],
 ]
@@ -33,10 +36,13 @@ export function ambientAt(minutes: number): RGB {
   return NIGHT
 }
 
-/** 0 at noon, ~0.6 at midnight. */
+/** How dark an ambient colour is next to a clear day: 0 at noon, ~0.72 at midnight. */
+export function darknessOf([r, g, b]: RGB): number {
+  return Math.max(0, 1 - (r + g + b) / (DAY[0] + DAY[1] + DAY[2]))
+}
+
 export function darknessAt(minutes: number): number {
-  const [r, g, b] = ambientAt(minutes)
-  return 1 - (r + g + b) / (3 * 255)
+  return darknessOf(ambientAt(minutes))
 }
 
 const texCache = new Map<string, HTMLCanvasElement>()

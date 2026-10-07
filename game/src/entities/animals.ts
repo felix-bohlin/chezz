@@ -7,12 +7,14 @@
 //   Benkei (ox) — grazes in his pen and moos.
 //   crows — come for Gonbei's fresh seedlings while he plants, pull some up, scatter when chased.
 //   frogs — only at night, by the paddies, saying "kero kero".
+//   roof crows — sit on the ridges of the poorer roofs and the ruin, watching; take off when you pass.
+//   rats — the harbour's real owners: out at dusk, in the rain and all night; scatter from turtles.
 
 import { animalSprite, type AnimalFrame, type AnimalKind } from '../art/animals'
 import type { Sprite } from '../art/sprite'
 import { pick, rng, type Rng } from '../engine/rng'
 import { areaTiles, findPath, tileFeet, tileOf } from '../world/grid'
-import { idx, T, TILE, type Area, type Pt } from '../world/layout'
+import { idx, isWet, T, TILE, type Area, type Pt } from '../world/layout'
 import type { Game } from '../game'
 import type { Villager } from './villager'
 
@@ -30,7 +32,7 @@ export class Animal {
   visible = true
   state: State = 'idle'
   private t = 0
-  private tx = 0
+  tx = 0
   private ty = 0
   private path: Pt[] = []
   private walkDist = 0
@@ -40,6 +42,8 @@ export class Animal {
   private stuck = 0
   /** Stable per-animal randomness (bedtime offsets etc.). */
   private jitter: number
+  /** Where it belongs: an area (ducks, deer), or favourite places by time of day (cats: "night,morning,noon,afternoon"). */
+  home = ''
   /** Chick → its hen; duckling → the duck ahead of it. */
   leader: Animal | null = null
 
@@ -87,9 +91,15 @@ export class Animal {
       case 'ox':
         return this.ox(g, dt, simDt)
       case 'crow':
-        return this.crow(g, dt, simDt)
+        return this.home ? this.roofCrow(g, dt) : this.crow(g, dt, simDt)
+      case 'rat':
+        return this.rat(g, dt, simDt)
       case 'frog':
         return this.frog(g, dt)
+      case 'gull':
+        return this.gull(g, dt)
+      case 'deer':
+        return this.deer(g, dt, simDt)
     }
   }
 
@@ -312,7 +322,7 @@ export class Animal {
     this.state = 'walk'
     const arrived = this.stepToWater(g, this.tx, this.ty, 10 * simDt)
     if (arrived || this.stuck > 30) {
-      const pond = areaTiles(g.world, g.grid, g.world.areas.pond)
+      const pond = areaTiles(g.world, g.grid, g.world.areas[this.home])
       const t = pick(this.r, pond)
       this.tx = t.x * TILE + 4 + this.r() * 8
       this.ty = t.y * TILE + 6 + this.r() * 6
@@ -329,7 +339,7 @@ export class Animal {
     const s = Math.min(dist, d)
     const nx = this.x + (dx / d) * s
     const ny = this.y + (dy / d) * s
-    const water = (x: number, y: number) => g.world.tiles[idx(Math.floor(x / TILE), Math.floor(y / TILE))] === T.Water
+    const water = (x: number, y: number) => isWet(g.world.tiles[idx(Math.floor(x / TILE), Math.floor(y / TILE))])
     if (water(nx, ny)) {
       this.x = nx
       this.y = ny
@@ -382,7 +392,8 @@ export class Animal {
 
   private cat(g: Game, dt: number, simDt: number): void {
     const m = g.clock.minutes
-    const spot = m < 7 * 60 || m >= 21 * 60 ? 'catTea' : m < 11 * 60 ? 'catWell' : m < 15 * 60 ? 'catBrew' : 'catShrine'
+    const spots = this.home.split(',')
+    const spot = m < 7 * 60 || m >= 21 * 60 ? spots[0] : m < 11 * 60 ? spots[1] : m < 15 * 60 ? spots[2] : spots[3]
     const target = g.world.places[spot]
     const f = tileFeet(target)
     if (Math.hypot(f.x - this.x, f.y - this.y) > 2) {
@@ -526,6 +537,210 @@ export class Animal {
     this.t = 2.5
   }
 
+  // ---------- seagulls ----------
+
+  private gull(g: Game, dt: number): void {
+    const night = g.clock.minutes > 20 * 60 || g.clock.minutes < 4 * 60 + 30
+    const quay = g.world.areas[this.home]
+    switch (this.state) {
+      case 'away': // circling over the harbour
+        this.t -= dt
+        this.walkDist += dt * 40
+        this.tx += dt * (0.5 + this.jitter * 0.4)
+        this.x = (quay.x + quay.w * (0.25 + this.jitter * 0.5)) * TILE + Math.cos(this.tx) * (90 + this.jitter * 60)
+        this.y = (quay.y + 3) * TILE + Math.sin(this.tx) * 40
+        this.z = 60 + Math.sin(this.tx * 2) * 12
+        this.faceRight = Math.sin(this.tx) < 0
+        if ((this.t <= 0 || night) && quay) {
+          const tiles = areaTiles(g.world, g.grid, quay)
+          const land = pick(this.r, tiles)
+          this.ty = 0
+          this.path = [{ x: land.x * TILE + 8, y: land.y * TILE + 10 }]
+          this.state = 'flyIn'
+        }
+        if (this.r() < dt * 0.05) this.noise(g, pick(this.r, ['Kyaa!', 'Kyaa kyaa!', 'Myaa!']), 6, '#f6f4ee')
+        break
+      case 'flyIn': {
+        const p = this.path[0]
+        const d = Math.hypot(p.x - this.x, p.y - this.y)
+        const s = Math.min(d, 70 * dt)
+        this.x += ((p.x - this.x) / (d || 1)) * s
+        this.y += ((p.y - this.y) / (d || 1)) * s
+        this.faceRight = p.x > this.x
+        this.z = Math.min(this.z, d * 0.5)
+        this.walkDist += s
+        if (d < 1) {
+          this.z = 0
+          this.state = 'peck'
+          this.t = 6 + this.r() * 12
+        }
+        break
+      }
+      case 'peck':
+      case 'idle': {
+        const p = g.player
+        const kid = g.villagers.find((v) => !v.inside && (v.id === 'hachi' || v.id === 'taro' || v.id === 'kiku') && Math.hypot(v.x - this.x, v.y - this.y) < 30)
+        if ((!p.hidden && Math.hypot(p.x - this.x, p.y - this.y) < 30) || kid) {
+          this.state = 'flyOut'
+          this.noise(g, 'KYAA!', 1, '#f6f4ee')
+          break
+        }
+        if (!night) this.t -= dt
+        if (this.t <= 0) this.state = 'flyOut'
+        break
+      }
+      case 'flyOut':
+        this.z += dt * 50
+        this.walkDist += dt * 50
+        if (this.z > 55) {
+          this.state = 'away'
+          this.t = 10 + this.r() * 25
+          this.tx = Math.atan2(this.y - (quay.y + 3) * TILE, this.x - (quay.x + quay.w / 2) * TILE)
+        }
+        break
+      default:
+        this.state = 'away'
+        this.t = this.r() * 20
+    }
+    this.visible = true
+  }
+
+  // ---------- temple deer ----------
+
+  private deer(g: Game, dt: number, simDt: number): void {
+    const area = g.world.areas[this.home]
+    const p = g.player
+    const pd = Math.hypot(p.x - this.x, p.y - this.y)
+    if (this.state === 'sit') {
+      // Bowing to a visitor.
+      this.t -= dt
+      if (this.t <= 0) {
+        this.state = 'idle'
+        this.t = 3
+      }
+      return
+    }
+    if (pd < 36 && !p.hidden && g.time - this.lastNoise > 20) {
+      this.state = 'sit'
+      this.t = 1.6
+      this.faceRight = p.x > this.x
+      this.noise(g, '*bows*', 0, '#f0d8b0')
+      return
+    }
+    if (this.state === 'walk') {
+      if (this.stepTo(g, this.tx, this.ty, 9 * simDt) || this.stuck > 30) {
+        this.state = this.r() < 0.5 ? 'peck' : 'idle'
+        this.t = 4 + this.r() * 10
+      }
+    } else {
+      this.t -= simDt
+      if (this.t <= 0) {
+        this.state = 'walk'
+        this.tx = (area.x + 0.5 + this.r() * (area.w - 1)) * TILE
+        this.ty = (area.y + 0.6 + this.r() * (area.h - 1)) * TILE
+      }
+    }
+    void dt
+  }
+
+  // ---------- crows on the rooftops ----------
+
+  /** Perched on a roof ridge (`home` lists building ids); z is the ridge height above the ground row. */
+  private roofCrow(g: Game, dt: number): void {
+    switch (this.state) {
+      case 'idle': {
+        const p = g.player
+        const near = Math.hypot(p.x - this.x, p.y - (this.y - this.z)) < 34 || Math.hypot(p.x - this.x, p.y - this.y) < 30
+        if (near && !p.hidden) {
+          this.noise(g, 'KRAA!', 2)
+          this.tx = this.x < p.x ? -1 : 1
+          this.ty = -0.4
+          this.state = 'flyOut'
+          this.t = 3
+          break
+        }
+        if (this.r() < dt * 0.04) this.noise(g, pick(this.r, ['Kaa.', 'Kaa\u2026', 'Kraa.']), 8, '#9a94a8')
+        if (this.r() < dt * 0.3) this.faceRight = !this.faceRight
+        break
+      }
+      case 'flyOut':
+        this.x += this.tx * dt * 80
+        this.y += this.ty * dt * 80
+        this.z += dt * 30
+        this.walkDist += dt * 80
+        this.t -= dt
+        if (this.t <= 0) {
+          this.state = 'away'
+          this.visible = false
+          this.t = 15 + this.r() * 30
+        }
+        break
+      default: {
+        this.visible = false
+        this.t -= dt
+        if (this.t > 0) break
+        const perch = g.roofPerch(pick(this.r, this.home.split(',')), this.r())
+        if (!perch || g.onScreen(perch.x, perch.y - perch.z, 10)) {
+          this.t = 5
+          break
+        }
+        this.x = perch.x
+        this.y = perch.y
+        this.z = perch.z
+        this.visible = true
+        this.state = 'idle'
+      }
+    }
+  }
+
+  // ---------- rats ----------
+
+  private rat(g: Game, dt: number, simDt: number): void {
+    const m = g.clock.minutes
+    const out = m > 18 * 60 + 30 || m < 5 * 60 + 30 || g.weather.rain > 0.3
+    const area = g.world.areas[this.home]
+    if (!out) {
+      // Back into the cracks in the quay as soon as nobody is looking.
+      if (this.visible && !g.onScreen(this.x, this.y, 20)) this.visible = false
+    } else if (!this.visible && !g.onScreen(this.x, this.y, 20)) this.visible = true
+    if (!this.visible) return
+    const p = g.player
+    const dp = Math.hypot(p.x - this.x, p.y - this.y)
+    if (dp < 28 && !p.hidden && this.state !== 'flee') {
+      this.state = 'flee'
+      this.t = 0.8
+      const d = dp || 1
+      this.tx = this.x + ((this.x - p.x) / d) * 60
+      this.ty = this.y + ((this.y - p.y) / d) * 30
+      if (this.r() < 0.4) this.noise(g, 'squeak!', 2, '#c08a8a')
+    }
+    switch (this.state) {
+      case 'flee':
+      case 'walk': {
+        const speed = this.state === 'flee' ? 70 : 34
+        const arrived = this.stepTo(g, this.tx, this.ty, speed * (this.state === 'flee' ? dt : Math.max(dt, simDt * 0.3)))
+        this.t -= dt
+        if (arrived || this.stuck > 6 || (this.state === 'flee' && this.t <= 0)) {
+          this.state = 'peck'
+          this.t = 0.5 + this.r() * 3
+        }
+        break
+      }
+      default: {
+        this.t -= dt
+        if (this.t > 0) break
+        const tiles = areaTiles(g.world, g.grid, area)
+        const here = this.tile
+        const near = tiles.filter((t) => Math.abs(t.x - here.x) < 5 && Math.abs(t.y - here.y) < 3)
+        const to = pick(this.r, near.length ? near : tiles)
+        this.tx = to.x * TILE + 2 + this.r() * 12
+        this.ty = to.y * TILE + 4 + this.r() * 10
+        this.state = 'walk'
+        this.t = 4
+      }
+    }
+  }
+
   // ---------- frogs ----------
 
   private frog(g: Game, dt: number): void {
@@ -546,17 +761,22 @@ export class Animal {
         if (this.isChicken && this.state === 'flee') frame = 'flap'
         break
       case 'peck':
-        frame = this.kind === 'ox' ? 'eat' : 'peck'
+        frame = this.kind === 'ox' || this.kind === 'deer' ? 'eat' : 'peck'
         if (this.isChicken || this.kind === 'crow') frame = Math.floor(this.t * 3) % 2 ? 'peck' : 'stand'
         break
       case 'sleep':
         frame = this.kind === 'duck' || this.kind === 'duckling' ? 'swim' : 'sleep'
         break
       case 'sit':
+        if (this.kind === 'deer') {
+          frame = 'peck'
+          break
+        }
         frame = this.kind === 'dog' ? (Math.floor(this.walkDist + performance.now() / 150) % 2 ? 'wag' : 'sit') : 'sit'
         break
       case 'flyIn':
       case 'flyOut':
+      case 'away':
         frame = Math.floor(this.walkDist / 6) % 2 ? 'fly1' : 'fly2'
         break
       default:
@@ -589,27 +809,43 @@ export function spawnAnimals(g: Game): Animal[] {
     c.leader = hens[2]
     out.push(c)
   }
-  // Ducks on the pond.
-  const pond = areaTiles(g.world, g.grid, g.world.areas.pond)
-  const start = tileFeet(pond[Math.floor(pond.length / 2)])
-  const mama = new Animal('duck', start.x, start.y - 3, 4242, 'Duck', ['The duck looks at you like you owe it money.'])
-  out.push(mama)
-  let prev = mama
-  for (let i = 0; i < 3; i++) {
-    const d = new Animal('duckling', start.x + 8 * (i + 1), start.y - 3, 5000 + i, 'Duckling', ['Peep.'])
-    d.leader = prev
-    out.push(d)
-    prev = d
+  // Duck families on the moat.
+  for (const [area, seed0] of [
+    ['moat', 4242],
+    ['moatSouth', 4343],
+  ] as const) {
+    const water = areaTiles(g.world, g.grid, g.world.areas[area])
+    const start = tileFeet(water[Math.floor(water.length * 0.3)])
+    const mama = new Animal('duck', start.x, start.y - 3, seed0, 'Duck', ['The duck looks at you like you owe it money.'])
+    mama.home = area
+    mama.state = 'walk'
+    out.push(mama)
+    let prev = mama
+    for (let i = 0; i < 3; i++) {
+      const d = new Animal('duckling', start.x + 8 * (i + 1), start.y - 3, seed0 + 10 + i, 'Duckling', ['Peep.'])
+      d.leader = prev
+      d.state = 'walk'
+      out.push(d)
+      prev = d
+    }
   }
-  // Pochi, Mike, Benkei.
+  // Pochi, the cats, Benkei.
   const bed = tileFeet(g.world.places.dogBed)
   out.push(new Animal('dog', bed.x, bed.y, 7, 'Pochi', ['Pochi wags so hard his whole body wags.', 'Pochi sniffs your shell thoroughly. You pass inspection.']))
-  const catAt = tileFeet(g.world.places.catTea)
-  const mike = new Animal('cat', catAt.x, catAt.y, 8, 'Mike', ['Mike the cat is asleep. Mike is always asleep. Mike has figured it out.', 'Mike opens one eye. Closes it. You have been judged.'])
-  mike.state = 'sleep'
-  out.push(mike)
+  const cats: [string, string, string[]][] = [
+    ['Mike', 'catTea,catWell,catFish,catInari', ['Mike the cat is asleep. Mike is always asleep. Mike has figured it out.', 'Mike opens one eye. Closes it. You have been judged.']],
+    ['Tora', 'catFish,catFish,catFish2,catFish', ['Tora, union representative of the fish market cats. He wants a word about fish heads.']],
+    ['Kuro', 'catFish2,catFish3,catFish3,catFish2', ['Kuro, a black cat. Sailors say black cats bring luck at sea. Kuro has heard this and expects payment.']],
+  ]
+  cats.forEach(([name, spots, talk], i) => {
+    const at = tileFeet(g.world.places[spots.split(',')[0]])
+    const c = new Animal('cat', at.x, at.y, 8 + i * 31, name, talk)
+    c.home = spots
+    c.state = 'sleep'
+    out.push(c)
+  })
   const pen = g.world.areas.oxPen
-  out.push(new Animal('ox', (pen.x + 2) * TILE, (pen.y + 2) * TILE, 9, 'Benkei', ['Benkei regards you with deep, bovine indifference.', 'Mōōō. (Benkei would like you to move. You are standing on his grass.)']))
+  out.push(new Animal('ox', (pen.x + 2) * TILE, (pen.y + 2) * TILE, 9, 'Benkei', ['Benkei regards you with deep, bovine indifference.', 'M\u014d\u014d\u014d. (Benkei would like you to move. You are standing on his grass.)']))
   // Crows wait off-screen until Gonbei starts planting.
   for (let i = 0; i < 4; i++) {
     const c = new Animal('crow', -100, -100, 9000 + i, 'Crow', ['Kaa.'])
@@ -617,16 +853,55 @@ export function spawnAnimals(g: Game): Animal[] {
     c.visible = false
     out.push(c)
   }
-  // Frogs along the paddy levees and the pond.
+  // Crows on the rooftops: the ruin, the row houses, the fish market.
+  for (let i = 0; i < 5; i++) {
+    const c = new Animal('crow', -100, -100, 9100 + i, 'Crow', ['The crow looks at you the way crows look at everything: as possible food.', 'Kaa. (It has seen things. It will not say which.)'])
+    c.home = i < 2 ? 'ruin,ruin,nagayaD' : i < 4 ? 'fishmarket,nagayaB,nagayaC,tentB' : 'castle,sanmon,belltower'
+    c.state = 'away'
+    c.visible = false
+    out.push(c)
+  }
+  // Rats along the quay and round the fish market.
+  for (let i = 0; i < 6; i++) {
+    const quay = areaTiles(g.world, g.grid, g.world.areas.quay)
+    const at = tileFeet(quay[Math.floor((i / 6) * quay.length)])
+    const rat = new Animal('rat', at.x, at.y, 9500 + i, 'Rat', [
+      'A harbour rat, the size of a small cat. It is not afraid of you. It should be. (It shouldn’t.)',
+      'The rat looks at your shell, then at you, and decides you are not food. Today.',
+    ])
+    rat.home = 'quay'
+    rat.state = 'peck'
+    out.push(rat)
+  }
+  // Seagulls over the harbour.
+  for (let i = 0; i < 8; i++) {
+    const gull = new Animal('gull', 0, 0, 7000 + i, 'Seagull', ['The seagull eyes your scarf. It eyes everything. It is a seagull.'])
+    gull.home = 'quay'
+    gull.state = 'away'
+    gull.tx = i * 0.8
+    out.push(gull)
+  }
+  // Deer at the temple. They bow.
+  const grounds = g.world.areas.templeGrounds
+  for (let i = 0; i < 4; i++) {
+    const d = new Animal('deer', (grounds.x + 4 + i * 9) * TILE, (grounds.y + 9 + (i % 2) * 2) * TILE, 8000 + i, 'Temple deer', [
+      'A temple deer. It bows to you. You bow back. Your shell clacks. The deer seems satisfied.',
+      'The deer sniffs you for rice crackers. You have none. It bows anyway. Polite deer.',
+    ])
+    d.home = 'templeGrounds'
+    d.state = 'idle'
+    out.push(d)
+  }
+  // Frogs on the paddy levees and by the temple pond.
   const frogSpots: Pt[] = [
-    { x: 38, y: 41 },
-    { x: 44, y: 45 },
-    { x: 50, y: 40 },
-    { x: 39, y: 43 },
-    { x: 45, y: 43 },
-    { x: 33, y: 39 },
-    { x: 5, y: 16 },
-    { x: 14, y: 14 },
+    { x: 8, y: 36 },
+    { x: 14, y: 40 },
+    { x: 8, y: 44 },
+    { x: 13, y: 37 },
+    { x: 19, y: 42 },
+    { x: 2, y: 47 },
+    { x: 44, y: 6 },
+    { x: 54, y: 4 },
   ]
   frogSpots.forEach((t, i) => {
     const f = tileFeet(t)
@@ -634,6 +909,5 @@ export function spawnAnimals(g: Game): Animal[] {
     frog.state = 'idle'
     out.push(frog)
   })
-  for (const a of out) if (a.kind === 'duck' || a.kind === 'duckling') a.state = 'walk'
   return out
 }

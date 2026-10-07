@@ -117,3 +117,65 @@ export function opaqueBounds(src: HTMLCanvasElement): { x: number; y: number; w:
       }
   return x1 < 0 ? { x: 0, y: 0, w: 0, h: 0 } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }
 }
+
+/** Pull colours toward a warm grey (k = 0 untouched … 1 sepia-grey). Weathers bright procedural art. */
+export function mute(c: HTMLCanvasElement, k: number): void {
+  const ctx = c.getContext('2d')!
+  const img = ctx.getImageData(0, 0, c.width, c.height)
+  const d = img.data
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue
+    const l = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11
+    d[i] += (l * 1.05 - d[i]) * k
+    d[i + 1] += (l - d[i + 1]) * k
+    d[i + 2] += (l * 0.88 - d[i + 2]) * k
+  }
+  ctx.putImageData(img, 0, 0)
+}
+
+/**
+ * Soot and weather on a building: mottled darkening, rain streaks running down from the eaves and
+ * mud splashed up the bottom few rows. Deterministic per `seed`.
+ */
+export function grime(c: HTMLCanvasElement, seed: number): void {
+  const ctx = c.getContext('2d')!
+  const W = c.width
+  const H = c.height
+  const img = ctx.getImageData(0, 0, W, H)
+  const d = img.data
+  const h = (x: number, y: number, s: number) => {
+    let v = (x * 374761393 + y * 668265263 + (seed + s) * 2246822519) | 0
+    v = Math.imul(v ^ (v >>> 13), 1274126177)
+    return ((v ^ (v >>> 16)) >>> 0) / 4294967296
+  }
+  for (let x = 0; x < W; x++) {
+    let bottom = -1
+    for (let y = H - 1; y >= 0; y--)
+      if (d[(y * W + x) * 4 + 3]) {
+        bottom = y
+        break
+      }
+    if (bottom < 0) continue
+    // Streaks: a few columns get a darker run somewhere down the wall.
+    const streak = h(x, 0, 1) < 0.2
+    const s0 = Math.floor(h(x, 1, 2) * H * 0.7)
+    const s1 = s0 + 6 + Math.floor(h(x, 2, 3) * 18)
+    for (let y = 0; y <= bottom; y++) {
+      const o = (y * W + x) * 4
+      if (!d[o + 3]) continue
+      // Blotchy grime: blocks of 3×3 share a value so it reads as stains, not noise.
+      let f = 0.9 + h(x >> 2, y / 3 | 0, 4) * 0.12 + (h(x, y, 5) < 0.04 ? -0.08 : 0)
+      if (streak && y >= s0 && y < s1) f *= 0.84 + ((y - s0) / (s1 - s0)) * 0.1
+      const up = bottom - y
+      let mud = 0
+      if (up < 6) {
+        f *= 0.8 + up * 0.035
+        mud = (6 - up) * 0.05
+      }
+      d[o] = (d[o] * f) * (1 - mud) + 70 * mud
+      d[o + 1] = (d[o + 1] * f) * (1 - mud) + 54 * mud
+      d[o + 2] = (d[o + 2] * f) * (1 - mud) + 38 * mud
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+}

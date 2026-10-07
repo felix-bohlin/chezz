@@ -80,6 +80,32 @@ export function drawHud(screen: Screen, clock: Clock, musicOn: boolean, hits: Hi
   ctx.textBaseline = 'alphabetic'
 }
 
+/** District name, fading in and out at the top of the screen when the turtle walks into a new area. */
+export function drawBanner(screen: Screen, name: string, t: number): void {
+  if (t > 3.2 || !name) return
+  const a = t < 0.4 ? t / 0.4 : t > 2.6 ? Math.max(0, (3.2 - t) / 0.6) : 1
+  const ctx = screen.dctx
+  const u = (n: number) => screen.u(n)
+  ctx.globalAlpha = a
+  ctx.font = `${u(18)}px ${FONT_TITLE}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const w = ctx.measureText(name.toUpperCase()).width + u(48)
+  const x = screen.W / 2
+  const y = u(30)
+  ctx.fillStyle = 'rgba(26, 18, 32, 0.75)'
+  roundRect(ctx, x - w / 2, y - u(16), w, u(32), u(4))
+  ctx.fill()
+  ctx.fillStyle = PALETTE.vermilion
+  ctx.fillRect(x - w / 2 + u(10), y - u(1), u(14), u(2))
+  ctx.fillRect(x + w / 2 - u(24), y - u(1), u(14), u(2))
+  ctx.fillStyle = PALETTE.gold
+  ctx.fillText(name.toUpperCase(), x, y + u(1))
+  ctx.globalAlpha = 1
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+}
+
 export function drawHint(screen: Screen, text: string, alpha: number): void {
   if (alpha <= 0) return
   const ctx = screen.dctx
@@ -218,9 +244,9 @@ export function drawTitle(screen: Screen, roshi: HTMLCanvasElement, t: number): 
   ctx.font = `${u(14)}px ${FONT_BODY}`
   ctx.fillStyle = PALETTE.washi
   if (narrow) {
-    ctx.fillText('Kumoi village, Iga Province', cx, ty + u(26))
-    ctx.fillText('early summer, 1582 · a village prototype', cx, ty + u(44))
-  } else ctx.fillText('Kumoi village, Iga Province · early summer, 1582 · a village prototype', cx, ty + u(28))
+    ctx.fillText('the port town of Kumoi, Ise Province', cx, ty + u(26))
+    ctx.fillText('early summer, 1582 · a town prototype', cx, ty + u(44))
+  } else ctx.fillText('the port town of Kumoi, Ise Province · early summer, 1582 · a town prototype', cx, ty + u(28))
   // Roshi with his speech bubble.
   const bob = Math.round(Math.sin(t * 2) * u(2))
   const rx = narrow ? cx - rw / 2 : cx - u(250)
@@ -231,7 +257,7 @@ export function drawTitle(screen: Screen, roshi: HTMLCanvasElement, t: number): 
   const by = narrow ? ry + rh + u(16) : ry + u(10)
   const bw = narrow ? screen.W - u(32) : Math.min(u(420), screen.W - bx - u(20))
   const text = [
-    'Hohoho! Turtle! Go to the village and fetch me a jug of the GOOD sake.',
+    'Hohoho! Turtle! Swim over to Kumoi and fetch me a jug of the GOOD sake.',
     'Kurozaemon will give it to you. Probably. Mention my name. Actually, don’t mention my name.',
     'And don’t dawdle! …Oh, who am I kidding.',
   ]
@@ -268,16 +294,22 @@ const HELP: [string, string][] = [
   ['[  ]', 'slow down / speed up time (or click the clock)'],
   ['P', 'pause time'],
   ['M', 'village map with who’s where'],
-  ['N', 'music on / off'],
+  ['R', 'weather: as it comes / rain / storm / mist / clear'],
+  ['N', 'sound on / off'],
   ['G', 'debug view: collisions, paths, plans'],
 ]
 
 const TRY = [
-  'Follow Gonbei to his paddies and watch the crows undo his work. Scare them off.',
+  'Swim north from the island: the harbour is right there. Turtles swim faster than they walk.',
+  'Climb the 108 steps to the temple at dawn: the bell, the conch, and deer that bow.',
+  'Follow Gonbei to the paddies outside the West Gate and watch the crows undo his work.',
   'Hide in your shell next to someone. Kiyo is not fooled.',
-  'Swim the river — turtles swim faster than they walk.',
-  'Speed time up and watch the village go to bed, then the fireflies come out.',
-  'Every third day is market day: Jinbei the peddler walks in from Sakai.',
+  'Swim the moat all the way round the town walls.',
+  'At night, follow Seiroku the fire watchman on his rounds. Hi no y\u014djin!',
+  'Every third day is market day: Jinbei walks in through the West Gate.',
+  'Read the contracts on the notice board in the square. The pay is terrible.',
+  'Walk out of the West Gate to the refugee camp. Nobody there laughs at turtles.',
+  'Press R for a storm and stand in the square. Count the seconds after the flash.',
 ]
 
 export function drawHelp(screen: Screen): void {
@@ -395,7 +427,7 @@ export function drawMap(
   ctx.textAlign = 'left'
   ctx.font = `${u(16)}px ${FONT_TITLE}`
   ctx.fillStyle = PALETTE.gold
-  ctx.fillText('KUMOI VILLAGE', mx, (narrow ? u(18) : my - u(30)))
+  ctx.fillText('KUMOI \u00b7 ISE PROVINCE', mx, narrow ? u(18) : my - u(30))
 
   // Who's where.
   const people = markers.filter((m) => m.status)
@@ -405,20 +437,33 @@ export function drawMap(
   ctx.fillStyle = PALETTE.gold
   ctx.fillText(`WHO’S WHERE · ${clock.hhmm()}`, lx, ly)
   ly += u(24)
-  const rowH = narrow ? u(18) : u(21)
-  for (const m of people) {
+  // Many villagers: a compact list (name + what they're doing), wrapped into as many columns as fit.
+  const rowH = u(16)
+  const colW = narrow ? (screen.W - u(40)) / 2 : listW
+  const rows = Math.max(1, Math.floor((screen.H - ly - u(30)) / rowH))
+  const cols = narrow ? 2 : 1
+  const shown = people.slice(0, rows * cols)
+  ctx.font = `${u(11)}px ${FONT_BODY}`
+  const clip = (text: string, w: number) => {
+    if (ctx.measureText(text).width <= w) return text
+    let t = text
+    while (t.length > 1 && ctx.measureText(`${t}\u2026`).width > w) t = t.slice(0, -1)
+    return `${t}\u2026`
+  }
+  shown.forEach((m, i) => {
+    const cx = lx + Math.floor(i / rows) * colW
+    const cy = ly + (i % rows) * rowH
     ctx.beginPath()
-    ctx.arc(lx + u(5), ly + u(7), u(4), 0, Math.PI * 2)
+    ctx.arc(cx + u(4), cy + u(6), u(3.5), 0, Math.PI * 2)
     ctx.fillStyle = m.color
     ctx.fill()
-    ctx.font = `${u(13)}px ${FONT_BODY}`
     ctx.fillStyle = PALETTE.washi
-    ctx.fillText(m.label ?? '', lx + u(16), ly)
-    const nw = u(narrow ? 90 : 96)
+    const name = clip(m.label ?? '', u(86))
+    ctx.fillText(name, cx + u(12), cy)
     ctx.fillStyle = m.inside ? '#8a7f70' : PALETTE.dim
-    ctx.fillText(m.status ?? '', lx + u(16) + nw, ly)
-    ly += rowH
-  }
+    ctx.fillText(clip(m.status ?? '', colW - u(108)), cx + u(100), cy)
+  })
+  ly += Math.min(rows, shown.length) * rowH
   ctx.font = `${u(11)}px ${FONT_BODY}`
   ctx.fillStyle = '#8a7f70'
   ctx.fillText(`M to close · time ×${SPEEDS[clock.speedIdx]}`, lx, ly + u(8))

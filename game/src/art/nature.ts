@@ -81,6 +81,12 @@ export function treeSprite(kind: TreeKind, seed: number): Sprite {
     case 'sacred':
       s = sacred(r)
       break
+    case 'blackpine':
+      s = blackpine(r)
+      break
+    case 'ginkgo':
+      s = ginkgo(r)
+      break
     default: {
       const leaves = kind === 'maple' ? MAPLE : kind === 'persimmon' ? PERSIMMON : BROAD
       const W = 36
@@ -141,6 +147,53 @@ function pine(r: Rng): Sprite {
     { outline: '#14281a', shadow: { cx: 20, cy: 45, rx: 12, ry: 3 } },
   )
   return { img, ax: 21, ay: 45 }
+}
+
+/** Wind-bent coastal black pine, leaning away from the sea. */
+function blackpine(r: Rng): Sprite {
+  const W = 44
+  const H = 50
+  const lean = r() < 0.5 ? -1 : 1
+  const img = build(
+    W,
+    H,
+    (ctx) => {
+      let x = 21
+      for (let y = 47; y > 14; y--) {
+        if (y % 4 === 0) x += lean
+        px(ctx, x, y, 3, 1, '#4a3a2e')
+        dot(ctx, x + 2, y, '#2e241c')
+      }
+      const top = x
+      const pads = [
+        { x: top, y: 12, rx: 11, ry: 4 },
+        { x: top - lean * 10, y: 20, rx: 8, ry: 3.5 },
+        { x: top + lean * 7, y: 26, rx: 7, ry: 3 },
+      ]
+      for (const p of pads) {
+        ellipse(ctx, p.x, p.y + 1, p.rx, p.ry, '#18301f')
+        ellipse(ctx, p.x, p.y, p.rx - 0.5, p.ry - 0.6, '#22422a')
+        ellipse(ctx, p.x - 1, p.y - 1, p.rx - 3, p.ry - 2, '#355c3c')
+      }
+    },
+    { outline: '#0e1a12', shadow: { cx: 22, cy: 47, rx: 11, ry: 3 } },
+  )
+  return { img, ax: 22, ay: 47 }
+}
+
+function ginkgo(r: Rng): Sprite {
+  const W = 40
+  const H = 64
+  const img = build(
+    W,
+    H,
+    (ctx) => {
+      trunk(ctx, 18, 30, 61, 5, '#7a6a5a', '#5a4a3a', '#9a8a7a')
+      canopy(ctx, 20, 26, 15, 22, { dark: '#4a7a2a', mid: '#6a9a3a', light: '#8ab84a', hi: '#b4d870' }, r, [4, 6])
+    },
+    { outline: '#2a4a1a', shadow: { cx: 20, cy: 61, rx: 12, ry: 3 } },
+  )
+  return { img, ax: 20, ay: 61 }
 }
 
 function cedar(r: Rng): Sprite {

@@ -3,7 +3,7 @@
 import { canvas, dot, ellipse, flipX, outline, px, type Ctx } from '../engine/pixel'
 import type { Sprite } from './sprite'
 
-export type AnimalKind = 'hen' | 'henBrown' | 'rooster' | 'chick' | 'duck' | 'duckling' | 'dog' | 'cat' | 'ox' | 'crow' | 'frog'
+export type AnimalKind = 'hen' | 'henBrown' | 'rooster' | 'chick' | 'duck' | 'duckling' | 'dog' | 'cat' | 'ox' | 'crow' | 'frog' | 'gull' | 'deer' | 'rat'
 export type AnimalFrame = 'stand' | 'walk1' | 'walk2' | 'peck' | 'flap' | 'sit' | 'sleep' | 'swim' | 'fly1' | 'fly2' | 'eat' | 'wag'
 
 const INK = '#1a1220'
@@ -58,6 +58,12 @@ function draw(kind: AnimalKind, frame: AnimalFrame): Sprite {
       return ox(frame)
     case 'crow':
       return crow(frame)
+    case 'gull':
+      return gull(frame)
+    case 'rat':
+      return rat(frame)
+    case 'deer':
+      return deer(frame)
     case 'frog':
       return make(8, 7, 4, 6, (ctx) => {
         ellipse(ctx, 4, 4, 3, 2, '#4f8a3a')
@@ -295,5 +301,111 @@ function crow(frame: AnimalFrame): Sprite {
     dot(ctx, hx, hy, '#8a8aa0')
     px(ctx, 7, 11, 1, 2, '#3a3a40')
     px(ctx, 9, 11, 1, 2, '#3a3a40')
+  })
+}
+
+function gull(frame: AnimalFrame): Sprite {
+  const white = '#f6f4ee'
+  const grey = '#a9b4bc'
+  return make(22, 14, 11, 12, (ctx) => {
+    if (frame === 'fly1' || frame === 'fly2') {
+      const up = frame === 'fly1'
+      ellipse(ctx, 11, 7, 4, 2, white)
+      px(ctx, 5, 6, 2, 2, white)
+      dot(ctx, 4, 7, '#f2b030')
+      if (up) {
+        for (let i = 0; i < 8; i++) {
+          dot(ctx, 10 - i, 5 - Math.floor(i / 2), grey)
+          dot(ctx, 12 + i, 5 - Math.floor(i / 2), grey)
+        }
+        dot(ctx, 3, 1, '#2a2233')
+        dot(ctx, 19, 1, '#2a2233')
+      } else {
+        for (let i = 0; i < 8; i++) {
+          dot(ctx, 10 - i, 7 + Math.floor(i / 3), grey)
+          dot(ctx, 12 + i, 7 + Math.floor(i / 3), grey)
+        }
+      }
+      px(ctx, 15, 7, 3, 1, white)
+      return
+    }
+    const peck = frame === 'peck'
+    ellipse(ctx, 11, 8, 5, 3, white)
+    px(ctx, 11, 6, 6, 3, grey)
+    px(ctx, 16, 7, 2, 2, '#2a2233')
+    const hx = peck ? 5 : 6
+    const hy = peck ? 8 : 3
+    px(ctx, hx, hy, 4, 4, white)
+    dot(ctx, hx + 1, hy + 1, '#1a1220')
+    px(ctx, hx - 2, hy + 2, 2, 1, '#f2b030')
+    if (frame !== 'sleep') {
+      const a = frame === 'walk1' ? 1 : 0
+      px(ctx, 10 - a, 11, 1, 2, '#f2902a')
+      px(ctx, 12 + a, 11, 1, 2, '#f2902a')
+    }
+  })
+}
+
+function deer(frame: AnimalFrame): Sprite {
+  const coat = '#a8703c'
+  const dark = '#7a4a26'
+  const spot = '#f0d8b0'
+  return make(24, 22, 12, 20, (ctx) => {
+    const bow = frame === 'peck'
+    const eat = frame === 'eat'
+    px(ctx, 7, 9, 12, 6, coat)
+    px(ctx, 7, 13, 12, 2, dark)
+    for (const [x, y] of [
+      [9, 10],
+      [12, 11],
+      [15, 10],
+      [17, 12],
+    ])
+      dot(ctx, x, y, spot)
+    px(ctx, 18, 9, 2, 3, '#f8f6f0') // white tail
+    const a = frame === 'walk1' ? 1 : 0
+    const b = frame === 'walk2' ? 1 : 0
+    for (const [x, d] of [
+      [8, -a],
+      [10, b],
+      [16, -b],
+      [18, a],
+    ])
+      px(ctx, x + d, 15, 1, 5, dark)
+    // Neck and head; it bows (a Nara deer habit) or grazes.
+    const hy = bow ? 8 : eat ? 13 : 2
+    const hx = bow ? 3 : 4
+    px(ctx, 6, Math.min(hy + 3, 9), 3, Math.abs(9 - hy - 3) + 2, coat)
+    px(ctx, hx, hy + 1, 5, 4, coat)
+    px(ctx, hx - 1, hy + 3, 2, 2, dark)
+    dot(ctx, hx + 1, hy + 2, '#1a1220')
+    px(ctx, hx + 3, hy - 1, 1, 2, dark) // ear
+    // Small antlers.
+    px(ctx, hx + 2, hy - 3, 1, 3, '#e8dcc0')
+    dot(ctx, hx + 1, hy - 3, '#e8dcc0')
+    dot(ctx, hx + 3, hy - 4, '#e8dcc0')
+  })
+}
+
+function rat(frame: AnimalFrame): Sprite {
+  const fur = '#4a3f3a'
+  const light = '#6a5d54'
+  return make(14, 7, 7, 6, (ctx) => {
+    const lift = frame === 'walk1' ? 1 : 0
+    // Long bare tail curling off to the right.
+    px(ctx, 9, 4, 3, 1, '#a07a74')
+    px(ctx, 12, 3 - lift, 2, 1, '#a07a74')
+    ellipse(ctx, 6.5, 3.5 - lift * 0.5, 3.5, 2, fur)
+    px(ctx, 5, 2 - lift, 3, 1, light)
+    // Pointy head, pink nose, ear, eye.
+    px(ctx, 1, 3, 3, 2, fur)
+    dot(ctx, 0, 4, '#c08a8a')
+    dot(ctx, 4, 1, '#8a6a64')
+    dot(ctx, 2, 3, '#e05040')
+    // Feet.
+    if (frame !== 'sit') {
+      dot(ctx, frame === 'walk2' ? 3 : 4, 5, '#a07a74')
+      dot(ctx, frame === 'walk2' ? 8 : 7, 5, '#a07a74')
+    }
   })
 }

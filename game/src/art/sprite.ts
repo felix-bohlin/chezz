@@ -1,4 +1,4 @@
-import { canvas, ellipse, outline, type Ctx } from '../engine/pixel'
+import { canvas, ellipse, mute, outline, type Ctx } from '../engine/pixel'
 
 /** A pre-rendered image plus the pixel inside it that sits on the world anchor point. */
 export interface Sprite {
@@ -18,6 +18,7 @@ export interface BuildOpts {
 export function build(w: number, h: number, body: (ctx: Ctx) => void, opts: BuildOpts = {}): HTMLCanvasElement {
   const [c, ctx] = canvas(w, h)
   body(ctx)
+  mute(c, 0.22)
   if (opts.outline) outline(c, opts.outline)
   if (opts.shadow) {
     const s = opts.shadow
