@@ -14,6 +14,7 @@ game is replayable in a 2D pixel-art "Shogun: Total War meets zen" frontend.
 | `backend/common.py` | Paths, ladder rungs, `manifest.json` / `PROGRESS.md` regeneration | backend |
 | `games/` | **The FE↔BE contract** (see below) | backend writes, frontend reads |
 | `frontend/` | Vite + React + TS pixel-art replay app | frontend |
+| `game/` | *Shell of Iga*: 2D open-world village prototype (TS + Canvas, no chess); see `game/README.md` | frontend |
 | `.claude/skills/` | `analyze-game` (post-game analysis), `ladder-cycle` (play → analyze → improve) | shared |
 | `.claude/agents/` | `shogun-sensei` (chess analyst), `engine-smith` (engine dev) | shared |
 
